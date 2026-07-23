@@ -103,6 +103,7 @@ docs/superpowers/evidence/recursive-project-tree-v1/
 ├── coverage-matrix.md
 ├── guard-tests.md
 ├── forward-tests.md
+├── run_fixtures.py
 └── final-validation.md
 ```
 
@@ -126,7 +127,7 @@ Frontmatter replacements must be complete YAML serializations: strings include t
 
 ## Behavioral Evaluation Isolation Contract
 
-Apply this contract to every baseline, fixture, transfer, or independent review execution:
+Apply this contract to every baseline, behavioral transfer test, or independent review execution. Deterministic protocol fixtures use the versioned runner in Task 9 and do not require an LLM executor:
 
 ```text
 fresh context =
@@ -1281,11 +1282,12 @@ Expected: fewer than 500 lines; every reference is reachable directly from `SKIL
 **Files:**
 - Create: `docs/superpowers/evidence/recursive-project-tree-v1/coverage-matrix.md`
 - Create: `docs/superpowers/evidence/recursive-project-tree-v1/forward-tests.md`
+- Create: `docs/superpowers/evidence/recursive-project-tree-v1/run_fixtures.py`
 - Modify: skill files only when a failing fixture demonstrates a contract gap
 
 **Interfaces:**
-- Consumes: installed skill, 34 spec fixtures, 21 V1 acceptance criteria, six baseline prompts, and twelve Local Guard scenarios.
-- Produces: fixture-by-fixture evidence and fresh-context behavioral results.
+- Consumes: installed skill, 34 spec fixtures, 21 V1 acceptance criteria, six baseline prompts, and eighteen Local Guard command/security scenarios.
+- Produces: a reusable deterministic runner, fixture-by-fixture evidence, and fresh-context behavioral results.
 
 **Acceptance:** V1-AC-01 through V1-AC-21; fixtures 1–34.
 
@@ -1315,18 +1317,32 @@ wc -l /Users/evan/.codex/skills/recursive-project-tree/SKILL.md
 
 Expected: no forbidden placeholder prose in the skill or references; exact File Map present; `SKILL.md` below 500 lines. Template tokens are checked only against the allowlist.
 
-- [ ] **Step 3: Create isolated temporary fixture roots**
+- [ ] **Step 3: Write and RED-run the deterministic fixture runner**
+
+Create `run_fixtures.py` using only the Python standard library. It accepts:
+
+```text
+--skill-root <absolute path>
+--fixture-root <absolute temporary path>
+--output <absolute JSON path>
+```
+
+It refuses broad or non-temporary fixture roots, creates one isolated root, invokes Guard commands as subprocesses, constructs the minimum ledger/filesystem/Git states for all Section 30 scenarios, and emits exactly 34 fixture results plus the AC-08 and AC-10 non-fixture results. Every result contains the exact command or assertion, observed value, artifact path, criterion IDs, and `PASS|FAIL`; an unexecuted scenario is `FAIL`.
+
+Before adding missing fixture behavior, run the runner against the current skill and preserve the actual failing scenario IDs as RED evidence under `/private/tmp`. A documentation-string or reference-file match alone cannot pass a runtime scenario.
+
+- [ ] **Step 4: Create isolated temporary fixture roots**
 
 Use one new `/private/tmp/recursive-project-tree-fixtures-*` root. Do not point fixtures at Kernel or another live repository. For each spec Section 30 scenario:
 
-1. copy `project-node` for Project scenarios and `work-node` for Work scenarios, according to the fixture's declared node type;
-2. replace all template tokens;
-3. write only the minimum ledger/evidence/Git-adapter state needed for that scenario;
-4. invoke the skill operation under test;
+1. create only the minimum Project/Work tree and temporary Git state;
+2. invoke the exact Guard command or deterministic state assertion through `run_fixtures.py`;
+3. preserve malformed bytes, interruption points, old/new commits, packet digests, record IDs, sequences, state deltas, and executor IDs;
+4. run node/tree validation;
 5. record the observed result and evidence;
 6. discard the temporary root after the matrix is complete.
 
-- [ ] **Step 4: Write `coverage-matrix.md`**
+- [ ] **Step 5: Write `coverage-matrix.md`**
 
 Use:
 
@@ -1348,7 +1364,7 @@ Use:
 
 Populate exactly 34 fixture rows, numbered 1 through 34, by copying each fixture's criterion references and expected behavior from spec Section 30. Add exactly two non-fixture rows: AC-08 for runtime dependency absence and AC-10 for removal isolation. Link the twelve Guard scenario results from `guard-tests.md` to the affected fixture and criterion rows. Every dynamic cell records an exact observed value or artifact path; result is only `PASS` or `FAIL`. Any fixture that cannot be executed is `FAIL`; `INCONCLUSIVE` is reserved for the fresh-context behavioral and independent-review rows in `forward-tests.md`.
 
-- [ ] **Step 5: Re-run the six baseline prompts with the skill**
+- [ ] **Step 6: Re-run the six baseline prompts with the skill**
 
 Use fresh isolated contexts. Prefix each unchanged `BASE-01` through `BASE-06` prompt with these two lines:
 
@@ -1359,7 +1375,7 @@ Use $recursive-project-tree at
 
 Do not supply the expected answer, prior failure, or suspected loophole. Record raw outputs and whether each governing invariant is now followed.
 
-- [ ] **Step 6: Run three transfer tests**
+- [ ] **Step 7: Run three transfer tests**
 
 Use fresh contexts and raw temporary artifacts:
 
@@ -1369,7 +1385,7 @@ Use fresh contexts and raw temporary artifacts:
 
 The executor must find the needed reference, apply the correct operation, and avoid unrelated context. Record what it read, wrote, refused, and returned.
 
-- [ ] **Step 7: Write `forward-tests.md`**
+- [ ] **Step 8: Write `forward-tests.md`**
 
 Use:
 
@@ -1388,7 +1404,7 @@ Populate nine rows: `GREEN-BASE-01` through `GREEN-BASE-06` and `TRANSFER-01` th
 
 `forward-tests.md` permits exactly `PASS`, `FAIL`, or `INCONCLUSIVE` in the Result column. `INCONCLUSIVE` is blocking and is used only when the required fresh or independent execution context is unavailable or its identity cannot be established.
 
-- [ ] **Step 8: Refactor only demonstrated gaps**
+- [ ] **Step 9: Refactor only demonstrated gaps**
 
 For each failed fixture or forward test:
 
@@ -1401,7 +1417,7 @@ For each failed fixture or forward test:
 
 Do not add hypothetical features or duplicate the same rule into multiple references.
 
-- [ ] **Step 9: Require full GREEN**
+- [ ] **Step 10: Require full GREEN**
 
 Run:
 
@@ -1415,16 +1431,17 @@ Run:
 
 Expected: no unresolved `FAIL` or `INCONCLUSIVE` row.
 
-- [ ] **Step 10: Commit the GREEN evidence**
+- [ ] **Step 11: Commit the GREEN evidence**
 
 ```bash
 git add \
+  docs/superpowers/evidence/recursive-project-tree-v1/run_fixtures.py \
   docs/superpowers/evidence/recursive-project-tree-v1/coverage-matrix.md \
   docs/superpowers/evidence/recursive-project-tree-v1/forward-tests.md
 git commit -m "docs: verify recursive tree v1 behavior"
 ```
 
-Expected: commit contains only the two evidence files.
+Expected: commit contains only the runner and two evidence files.
 
 ---
 
