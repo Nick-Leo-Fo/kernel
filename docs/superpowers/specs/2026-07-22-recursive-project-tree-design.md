@@ -180,6 +180,7 @@ An optional Git/CI adapter that runs Guard validation against a frozen candidate
 17. Self-review and independent review are distinct facts; unavailable independence is reported as inconclusive, never simulated.
 18. Every projection field required for recovery is reconstructable from frozen contracts, append-only records, immutable Return Packets, and live measurement.
 19. Every append-only record in one node carries the next contiguous `node_sequence`, giving records across separate ledgers one recoverable total order and exposing missing events.
+20. Reusable, repeated, path-sensitive, order-sensitive, or high-consequence command sequences are promoted to named, parameterized automation before reuse; agents do not repeatedly reconstruct them from chat.
 
 ## 7. Directory structures
 
@@ -194,6 +195,7 @@ An optional Git/CI adapter that runs Guard validation against a frozen candidate
 ├── ROADMAP.md
 ├── CONTEXT.md
 ├── ARCHITECTURE.md
+├── automation/
 ├── ledger/
 │   ├── decisions.jsonl
 │   ├── approvals.jsonl
@@ -222,7 +224,9 @@ An optional Git/CI adapter that runs Guard validation against a frozen candidate
 └── RETURN.md
 ```
 
-Every listed file and directory exists from node creation. An empty ledger is an empty file, not a missing file. `evidence/`, `returns/`, and `children/` may be empty. A root Project Node marks `RETURN.md` as `not_applicable`; every non-root node maintains a current Return Packet projection and preserves submitted packets in `returns/`.
+Every listed file and directory exists from node creation. An empty ledger is an empty file, not a missing file. `automation/`, `evidence/`, `returns/`, and `children/` may be empty. A root Project Node marks `RETURN.md` as `not_applicable`; every non-root node maintains a current Return Packet projection and preserves submitted packets in `returns/`.
+
+`automation/` belongs only to a Project Node. It stores durable commands owned by that project rather than copies inside transient Work Nodes. A Work Node may create a temporary proof script inside its authorized workspace, but reusable automation is returned as a promotion candidate and is accepted into the nearest authorized Project Node.
 
 Project Nodes must maintain `ROADMAP.md`, `CONTEXT.md`, and `ARCHITECTURE.md`. Work Nodes inherit the relevant frozen context through `CONTRACT.md` and do not create parallel top-level governance documents.
 
@@ -1049,6 +1053,22 @@ procedure:
 
 V1 realizes this as skill instructions and files rather than runtime classes. Goal Pursuit remains the external seam; Procedure details stay inside it.
 
+### 20.3 Command Promotion Rule
+
+An executor may run a short, one-off, read-only command directly. Before a second execution, or before the first execution when a command is long, path-sensitive, order-sensitive, mutation-heavy, failure-prone, or expected to recur, it promotes the command sequence to a named script.
+
+The script:
+
+- belongs to the nearest Project Node whose lifecycle owns the operation;
+- accepts explicit parameters rather than embedding session-specific absolute paths;
+- prints usage and rejects missing, extra, or unsafe broad targets;
+- uses fail-fast behavior and preserves the prior canonical state on failure where feasible;
+- provides dry-run behavior for material filesystem or external effects, unless the Procedure records why dry-run is impossible;
+- is verified with at least one success case and one failure/invalid-input case;
+- records the originating node, replaced ad-hoc command, intended owner, verification evidence, and known side effects.
+
+A Work Node without authority to modify the owning Project Node includes a `command_promotion_candidate` in its Return Packet. The parent may accept, revise, or reject the promotion separately from accepting the Work Node's primary deliverable. Copying the same helper into sibling Work Nodes is drift, not reuse.
+
 A node selects a `primary_procedure`. A Subgoal may select another Procedure. Temporary switches use a stack:
 
 ```yaml
@@ -1095,7 +1115,7 @@ reconcile context → establish baseline → plan smallest useful slice
 
 The executor measures pre-existing failures before changing files. It divides work into the smallest useful vertical slices and defines each slice's verification before implementation. Test-first behavior is preferred where observable; otherwise the plan defines a measurement, inspection, or human acceptance method first.
 
-A failed slice enters Debug rather than triggering un-attributed edits. Local recovery may revise or replace a Subgoal, but expanded authority or purpose requires a child or amendment. Evidence includes baseline, changed artifact identity, per-slice checks, final acceptance mapping, key decisions, review dispositions, and measured Git state.
+A failed slice enters Debug rather than triggering un-attributed edits. Local recovery may revise or replace a Subgoal, but expanded authority or purpose requires a child or amendment. The Build Procedure applies the Section 20.3 Command Promotion Rule before repeating or introducing a fragile command sequence. Evidence includes baseline, changed artifact identity, per-slice checks, command promotions, final acceptance mapping, key decisions, review dispositions, and measured Git state.
 
 Build exits successfully only when the complete acceptance set passes. “Code written,” partial tests, or Reviewer confidence are insufficient.
 
