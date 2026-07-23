@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Normative source: `docs/superpowers/specs/2026-07-22-recursive-project-tree-design.md` at `c218c37d`.
+- Normative source: `docs/superpowers/specs/2026-07-22-recursive-project-tree-design.md` at `14b9adb3`.
 - Install exactly one skill at `/Users/evan/.codex/skills/recursive-project-tree/`.
 - Write all installed skill content in English. User conversation may remain Chinese.
 - Do not create a second source copy of the skill inside Kernel.
@@ -26,6 +26,7 @@
 - Use only the Python standard library at runtime.
 - Classify every normative control as `advisory`, `detective`, or `preventive`, and name the boundary for every preventive claim.
 - Treat hooks as bypassable. Claim preventive integration only for an externally required check the executor cannot bypass or reconfigure.
+- Do not expose long multi-path `mkdir`, `touch`, or equivalent setup commands as a workflow interface. Repeated directory construction must live in a tested helper that accepts one target root.
 - Do not invoke independent review after every task. Run deterministic checks within tasks, one independent plan review before execution, and one independent final skill review after all V1 fixtures pass.
 - No emojis in skill content, templates, evidence, or commit messages.
 
@@ -39,6 +40,7 @@
 ├── agents/
 │   └── openai.yaml
 ├── scripts/
+│   ├── bootstrap_skill_layout.sh
 │   ├── rpt_guard.py
 │   └── install_git_adapter.py
 ├── references/
@@ -68,6 +70,7 @@
     │   ├── CONTEXT.md
     │   ├── ARCHITECTURE.md
     │   ├── RETURN.md
+    │   ├── automation/
     │   ├── ledger/
     │   │   ├── decisions.jsonl
     │   │   ├── approvals.jsonl
@@ -90,7 +93,7 @@
         └── children/
 ```
 
-Approved or rejected `AMENDMENT-NNNN.md` proposals are created directly in the node root, as specified; there is no amendment subdirectory. Empty template directories and zero-byte JSONL files are intentional.
+Approved or rejected `AMENDMENT-NNNN.md` proposals are created directly in the node root, as specified; there is no amendment subdirectory. Empty `automation/`, evidence, returns, and children directories and zero-byte JSONL files are intentional.
 
 ### Kernel evidence
 
@@ -217,7 +220,7 @@ Use this exact shape:
 # Recursive Project Tree V1 — Baseline Evidence
 
 **Skill present:** no
-**Spec baseline:** c218c37d
+**Spec baseline:** 14b9adb3
 **Isolation:** fresh context per scenario; no expected answer supplied
 
 | ID | Executor/session | Raw output artifact | Observed action | Governing invariant | Result |
@@ -261,11 +264,12 @@ Expected: the commit contains only `baseline.md`.
 **Files:**
 - Create: `/Users/evan/.codex/skills/recursive-project-tree/SKILL.md`
 - Create: `/Users/evan/.codex/skills/recursive-project-tree/agents/openai.yaml`
+- Create: `/Users/evan/.codex/skills/recursive-project-tree/scripts/bootstrap_skill_layout.sh`
 - Create: the `references/` and `templates/` directories in the File Map
 
 **Interfaces:**
 - Consumes: official `skill-creator` scripts and the approved global path.
-- Produces: a discoverable package skeleton with no target-project writes.
+- Produces: a discoverable package skeleton plus one idempotent layout helper with no target-project writes.
 
 **Acceptance:** V1-AC-01, V1-AC-08, V1-AC-10.
 
@@ -306,40 +310,26 @@ Run:
 
 Expected: the directory is created once, `agents/openai.yaml` exists, and the script reports success.
 
-- [ ] **Step 3: Create the exact template directories**
+- [ ] **Step 3: Write and run the stable layout helper**
 
-Create both node trees from the File Map. Create zero-byte `decisions.jsonl`, `approvals.jsonl`, and `attempts.jsonl`; leave `evidence/`, `returns/`, and `children/` empty.
+Create `scripts/bootstrap_skill_layout.sh`. It accepts exactly one positional argument, rejects missing or extra arguments, and creates both template directory trees from the File Map. It creates zero-byte `decisions.jsonl`, `approvals.jsonl`, and `attempts.jsonl` only when absent; it must never truncate an existing ledger. It leaves the Project template's `automation/` and both templates' `evidence/`, `returns/`, and `children/` directories empty.
 
 Run:
 
 ```bash
-mkdir -p \
-  /Users/evan/.codex/skills/recursive-project-tree/scripts \
-  /Users/evan/.codex/skills/recursive-project-tree/references/procedures \
-  /Users/evan/.codex/skills/recursive-project-tree/templates/project-node/ledger \
-  /Users/evan/.codex/skills/recursive-project-tree/templates/project-node/evidence \
-  /Users/evan/.codex/skills/recursive-project-tree/templates/project-node/returns \
-  /Users/evan/.codex/skills/recursive-project-tree/templates/project-node/children \
-  /Users/evan/.codex/skills/recursive-project-tree/templates/work-node/ledger \
-  /Users/evan/.codex/skills/recursive-project-tree/templates/work-node/evidence \
-  /Users/evan/.codex/skills/recursive-project-tree/templates/work-node/returns \
-  /Users/evan/.codex/skills/recursive-project-tree/templates/work-node/children
-touch \
-  /Users/evan/.codex/skills/recursive-project-tree/templates/project-node/ledger/decisions.jsonl \
-  /Users/evan/.codex/skills/recursive-project-tree/templates/project-node/ledger/approvals.jsonl \
-  /Users/evan/.codex/skills/recursive-project-tree/templates/project-node/ledger/attempts.jsonl \
-  /Users/evan/.codex/skills/recursive-project-tree/templates/work-node/ledger/decisions.jsonl \
-  /Users/evan/.codex/skills/recursive-project-tree/templates/work-node/ledger/approvals.jsonl \
-  /Users/evan/.codex/skills/recursive-project-tree/templates/work-node/ledger/attempts.jsonl
+bash /Users/evan/.codex/skills/recursive-project-tree/scripts/bootstrap_skill_layout.sh \
+  /Users/evan/.codex/skills/recursive-project-tree
 ```
 
 Run:
 
 ```bash
+bash /Users/evan/.codex/skills/recursive-project-tree/scripts/bootstrap_skill_layout.sh \
+  /Users/evan/.codex/skills/recursive-project-tree
 find /Users/evan/.codex/skills/recursive-project-tree -maxdepth 4 -print | sort
 ```
 
-Expected: every directory and empty ledger in the File Map appears. Create the empty `scripts/` directory for Task 7; no database, daemon, or hidden project runtime exists.
+Expected: the second invocation is idempotent; every directory and empty ledger in the File Map appears; no database, daemon, or hidden project runtime exists.
 
 - [ ] **Step 4: Verify metadata**
 
@@ -872,6 +862,15 @@ reconcile context → establish baseline → plan smallest useful slice
 
 Require measured pre-existing failures, vertical slices, verification before implementation, Debug entry for unattributed failures, and complete acceptance evidence before successful exit.
 
+Include the Command Promotion Rule:
+
+```text
+promote before second execution, or before first execution when the command is
+long, path-sensitive, order-sensitive, mutation-heavy, failure-prone, or expected to recur
+```
+
+Durable automation belongs to the nearest owning Project Node's `automation/`. It accepts explicit parameters, prints usage, rejects unsafe broad targets, uses fail-fast behavior, offers dry-run for material effects when feasible, and has success plus invalid-input verification. A Work Node without authority records a `command_promotion_candidate` in its Return Packet instead of copying the helper into sibling nodes.
+
 - [ ] **Step 3: Write `debug.md`**
 
 Use this flow:
@@ -1132,6 +1131,8 @@ Use `argparse`, `json`, `hashlib`, `pathlib`, `tempfile`, `os`, `shutil`, and `s
 
 Use exit `0` for pass/success, `2` for validation refusal, `3` for incomplete operation requiring recovery, and `4` for invocation error. Stable machine fields go to stdout; diagnostics go to stderr.
 
+`init-project`, `spawn-child`, and `activate-child` create the complete required directory and file layout from one `--root` or parent path plus one request file. Their public instructions must never require callers to reproduce internal `mkdir` or `touch` lists.
+
 - [ ] **Step 3: Implement deterministic validation**
 
 Implement the mechanical checks from `references/validation.md` without semantic inference. Sort discovered paths and result rows. `validate-node` and `validate-tree` must never write. `inspect-enforcement` reports:
@@ -1332,7 +1333,7 @@ Use:
 ```markdown
 # Recursive Project Tree V1 — Coverage Matrix
 
-**Spec baseline:** c218c37d
+**Spec baseline:** 14b9adb3
 **Skill path:** /Users/evan/.codex/skills/recursive-project-tree
 **Fixture root:** Record the exact temporary path used by Step 3.
 
@@ -1519,7 +1520,7 @@ Use:
 ```markdown
 # Recursive Project Tree V1 — Final Validation
 
-**Spec:** c218c37d
+**Spec:** 14b9adb3
 **Skill subject:** Record the manifest digest frozen in Step 1.
 **Validation date:** Record the local ISO date.
 
