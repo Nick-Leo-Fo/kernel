@@ -1428,6 +1428,7 @@ Planned installation:
 ~/.codex/skills/recursive-project-tree/
 ├── SKILL.md
 ├── scripts/
+│   ├── bootstrap_skill_layout.sh
 │   ├── rpt_guard.py
 │   └── install_git_adapter.py
 ├── references/
@@ -1458,7 +1459,9 @@ The skill and all installed templates are written in English. Conversation with 
 
 Before mutating a tree, the skill completes the canonical Section 20.1 Entry Manifest and evaluates the same Enter gates. It does not maintain a second pre-mutation checklist.
 
-The Guard uses only the Python standard library. It has no database, daemon, network service, or hidden registry. `install_git_adapter.py` is optional and changes a target repository only after explicit authorization. It installs repository-local hook shims or emits CI configuration that invokes the same read-only validator; it never represents hooks alone as unbypassable.
+The Guard uses only the Python standard library. It has no database, daemon, network service, or hidden registry. `bootstrap_skill_layout.sh` is an idempotent packaging helper: it accepts exactly one installation-root argument and creates the complete static skill directory layout, so installation does not expose a fragile multi-path `mkdir`/`touch` command. It does not create governed project nodes. `install_git_adapter.py` is optional and changes a target repository only after explicit authorization. It installs repository-local hook shims or emits CI configuration that invokes the same read-only validator; it never represents hooks alone as unbypassable.
+
+User-facing node creation is never expressed as a copied list of `mkdir` or `touch` commands. `init-project`, `spawn-child`, and `activate-child` accept one governed root or parent path plus one request document and create the complete directory, template, and empty-ledger structure deterministically.
 
 It must not require repeated permission for ordinary in-contract file updates. Material contract, authority, return, and integration decisions remain explicit gates.
 
