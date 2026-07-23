@@ -4,13 +4,13 @@
 
 **Goal:** Install and validate an English global Codex skill that governs recursive filesystem responsibility trees without allowing project drift, retry-history resets, unsupported acceptance, or silent authority expansion.
 
-**Architecture:** `SKILL.md` is a lean router and entry gate. Normative domain, lifecycle, operation, recovery, and validation contracts live in one-level references; six Procedure references are loaded only when selected; Project and Work templates are copied into governed trees. V1 has no daemon, database, runtime CLI, automatic lock, or target-repository dependency: execution is guided file operation plus live read-only measurement, while development evidence remains in Kernel.
+**Architecture:** The filesystem protocol remains authoritative. `SKILL.md` is a lean router and entry gate; normative contracts live in one-level references; Project and Work templates are copied into governed trees. A default Python-standard-library Local Guard provides deterministic validation and controlled protocol mutation without hidden state. Optional Git hooks and CI configuration consume the same validator, while their bypass boundary is reported truthfully.
 
-**Tech Stack:** English Markdown, YAML frontmatter, JSONL record contracts, Git and shell inspection, Codex skill metadata, isolated agent pressure tests. Python plus PyYAML is allowed only in a temporary authoring environment for the official `skill-creator` validation scripts; the installed skill has no Python or third-party runtime dependency.
+**Tech Stack:** English Markdown, YAML frontmatter, JSONL record contracts, Git and shell inspection, Codex skill metadata, isolated agent pressure tests, and Python 3 standard-library Guard scripts. PyYAML is allowed only in a temporary authoring environment for the official `skill-creator` validation scripts; the installed skill has no third-party runtime dependency.
 
 ## Global Constraints
 
-- Normative source: `docs/superpowers/specs/2026-07-22-recursive-project-tree-design.md` at `7961bf2e`.
+- Normative source: `docs/superpowers/specs/2026-07-22-recursive-project-tree-design.md` at `c218c37d`.
 - Install exactly one skill at `/Users/evan/.codex/skills/recursive-project-tree/`.
 - Write all installed skill content in English. User conversation may remain Chinese.
 - Do not create a second source copy of the skill inside Kernel.
@@ -19,10 +19,13 @@
 - Preserve the filesystem responsibility tree as authority; Git remains an optional measured adapter.
 - Keep node completion, parent acceptance, integration verification, and actual integration separate.
 - Keep `work_kind` advisory. Procedures do not change node identity or authority.
-- Use one serialized writer per node. V1 detects and fails closed on observed conflicts but does not claim to prevent arbitrary concurrent writers.
+- Use one serialized writer per node. The Local Guard rejects a conflicting declared writer and V1 fails closed on observed conflicts, but it does not claim to prevent arbitrary same-authority filesystem writers.
 - Preserve the three-attempt no-progress rule by `progress_scope_id`; model, agent, Procedure, Subgoal, node, or path changes do not reset it.
 - Keep `SKILL.md` below 500 lines and route detailed contracts to references.
-- Do not add a database, daemon, standalone CLI, JSON Schema package, automatic branch cleanup, central registry, hash chain, signed checkpoint, automatic ULID/digest helper, or multi-process lock.
+- Do not add a database, daemon, standalone general-purpose CLI beyond the bounded Local Guard, JSON Schema package, automatic branch cleanup, central registry, hash chain, signed checkpoint, multi-process lock, ACL manager, or sandbox provisioner.
+- Use only the Python standard library at runtime.
+- Classify every normative control as `advisory`, `detective`, or `preventive`, and name the boundary for every preventive claim.
+- Treat hooks as bypassable. Claim preventive integration only for an externally required check the executor cannot bypass or reconfigure.
 - Do not invoke independent review after every task. Run deterministic checks within tasks, one independent plan review before execution, and one independent final skill review after all V1 fixtures pass.
 - No emojis in skill content, templates, evidence, or commit messages.
 
@@ -35,6 +38,9 @@
 ├── SKILL.md
 ├── agents/
 │   └── openai.yaml
+├── scripts/
+│   ├── rpt_guard.py
+│   └── install_git_adapter.py
 ├── references/
 │   ├── domain-model.md
 │   ├── file-contracts.md
@@ -92,6 +98,7 @@ Approved or rejected `AMENDMENT-NNNN.md` proposals are created directly in the n
 docs/superpowers/evidence/recursive-project-tree-v1/
 ├── baseline.md
 ├── coverage-matrix.md
+├── guard-tests.md
 ├── forward-tests.md
 └── final-validation.md
 ```
@@ -210,7 +217,7 @@ Use this exact shape:
 # Recursive Project Tree V1 — Baseline Evidence
 
 **Skill present:** no
-**Spec baseline:** 7961bf2e
+**Spec baseline:** c218c37d
 **Isolation:** fresh context per scenario; no expected answer supplied
 
 | ID | Executor/session | Raw output artifact | Observed action | Governing invariant | Result |
@@ -307,6 +314,7 @@ Run:
 
 ```bash
 mkdir -p \
+  /Users/evan/.codex/skills/recursive-project-tree/scripts \
   /Users/evan/.codex/skills/recursive-project-tree/references/procedures \
   /Users/evan/.codex/skills/recursive-project-tree/templates/project-node/ledger \
   /Users/evan/.codex/skills/recursive-project-tree/templates/project-node/evidence \
@@ -331,7 +339,7 @@ Run:
 find /Users/evan/.codex/skills/recursive-project-tree -maxdepth 4 -print | sort
 ```
 
-Expected: every directory and empty ledger in the File Map appears; no `scripts/`, database, or project runtime exists.
+Expected: every directory and empty ledger in the File Map appears. Create the empty `scripts/` directory for Task 7; no database, daemon, or hidden project runtime exists.
 
 - [ ] **Step 4: Verify metadata**
 
@@ -954,7 +962,7 @@ Expected: exit 0 for all six files.
 - Consumes: all normative contracts from Tasks 3–5.
 - Produces: fail-closed Resume, mechanical/adjudicative validation separation, the sole authority matrix, and honest Kernel provenance.
 
-**Acceptance:** V1-AC-06, V1-AC-07, V1-AC-11, V1-AC-16, V1-AC-17, V1-AC-19. Fixtures 2, 7–11, 15–24, 27–30.
+**Acceptance:** V1-AC-06, V1-AC-07, V1-AC-11, V1-AC-16, V1-AC-17, V1-AC-19, V1-AC-21. Fixtures 2, 7–11, 15–24, 27–34.
 
 - [ ] **Step 1: Write `recovery.md`**
 
@@ -1029,6 +1037,16 @@ verdict | evidence_refs | blocking_reason
 
 Mechanical checks may report pass/fail. Adjudicative checks record a reasoned judgment and authority; they are never claimed as mechanically proven.
 
+For every normative check, also record:
+
+```text
+enforcement_class: advisory | detective | preventive
+enforcement_boundary:
+bypass_conditions:
+```
+
+State that Guard validation is detective, Guard precondition refusal is preventive only for Guard-routed mutations, hooks are bypassable, and CI is preventive for integration only when an external authority requires the check and the executor cannot reconfigure or bypass it.
+
 - [ ] **Step 4: Write `kernel-lineage.md`**
 
 Map the extracted Kernel source paths to their adopted roles and corrections exactly as spec Section 4. End with:
@@ -1054,7 +1072,122 @@ Expected: each distinction has an explicit rule, not only a glossary mention.
 
 ---
 
-### Task 7: Write the lean skill entrypoint
+### Task 7: Implement and test the default Local Guard
+
+**Files:**
+- Create: `/Users/evan/.codex/skills/recursive-project-tree/scripts/rpt_guard.py`
+- Create: `/Users/evan/.codex/skills/recursive-project-tree/scripts/install_git_adapter.py`
+- Create: `docs/superpowers/evidence/recursive-project-tree-v1/guard-tests.md`
+
+**Interfaces:**
+- Consumes: file contracts, lifecycle, operations, recovery, and validation references from Tasks 3–6.
+- Produces: `validate-node`, `validate-tree`, `inspect-enforcement`, `init-project`, `spawn-child`, `activate-child`, `append-record`, `submit-return`, and `adjudicate-return`; stable JSON results; optional Git adapter files.
+
+**Acceptance:** V1-AC-01 through V1-AC-08, V1-AC-10 through V1-AC-13, V1-AC-16, and V1-AC-18 through V1-AC-21. Fixtures 1–21 and 29–34.
+
+- [ ] **Step 1: Write failing black-box Guard tests**
+
+Use Python `unittest` from a temporary test module under `/private/tmp`. Invoke the installed script as a subprocess; do not import private implementation functions. Cover:
+
+```text
+GUARD-01 valid read-only validation emits versioned JSON and changes no bytes
+GUARD-02 invalid lifecycle transition exits nonzero before canonical mutation
+GUARD-03 append-record assigns one contiguous cross-ledger node_sequence
+GUARD-04 malformed JSONL fails closed without rewriting the malformed file
+GUARD-05 spawn intent interruption resumes the same child_id without duplication
+GUARD-06 atomic-write failure preserves the previous canonical file
+GUARD-07 postcondition failure reports incomplete_operation and recovery artifact
+GUARD-08 second declared active writer is refused
+GUARD-09 raw out-of-band edit is detected but not claimed as prevented
+GUARD-10 inspect-enforcement labels a local hook bypassable
+GUARD-11 non-required CI is detective, not preventive
+GUARD-12 externally required non-bypassable CI is preventive_for_integration
+```
+
+Run:
+
+```bash
+python3 -m unittest -v /private/tmp/test_rpt_guard.py
+```
+
+Expected: FAIL because `rpt_guard.py` does not exist.
+
+- [ ] **Step 2: Implement the stable command and result contract**
+
+Use `argparse`, `json`, `hashlib`, `pathlib`, `tempfile`, `os`, `shutil`, and `subprocess` only. Every command accepts `--root`; mutating commands also accept an operation-specific JSON request file. Every result is one JSON object:
+
+```json
+{
+  "schema_version": "rpt-guard-result-v1",
+  "operation": "validate-tree",
+  "status": "pass",
+  "changed": false,
+  "enforcement_class": "detective",
+  "enforcement_boundary": "local_guard_invocation",
+  "bypass_conditions": ["direct_same_authority_filesystem_write"],
+  "checks": [],
+  "artifacts": []
+}
+```
+
+Use exit `0` for pass/success, `2` for validation refusal, `3` for incomplete operation requiring recovery, and `4` for invocation error. Stable machine fields go to stdout; diagnostics go to stderr.
+
+- [ ] **Step 3: Implement deterministic validation**
+
+Implement the mechanical checks from `references/validation.md` without semantic inference. Sort discovered paths and result rows. `validate-node` and `validate-tree` must never write. `inspect-enforcement` reports:
+
+```text
+hook_present | hook_bypassable | ci_check_present |
+ci_check_required | executor_can_bypass | preventive_boundary
+```
+
+It must not infer branch-protection authority from a workflow file alone; absent externally supplied, verified protection evidence, `ci_check_required=false`.
+
+- [ ] **Step 4: Implement controlled mutations and atomicity**
+
+For each mutation:
+
+```text
+parse request → validate current state → construct complete new bytes
+→ write and fsync same-directory temporary file
+→ os.replace canonical target → fsync parent directory
+→ validate postcondition → emit result
+```
+
+Use a recovery artifact with operation ID, intended paths, pre-write digests, observed paths, and reconciliation command when a multi-file operation cannot complete atomically. Never silently retry an ambiguous external effect. Template activation must replace all approved tokens, compute stable IDs/digests, and leave no unresolved token.
+
+- [ ] **Step 5: Implement the optional Git adapter installer**
+
+`install_git_adapter.py` requires explicit `--repo`, `--mode hook|ci`, and `--guard-path`. Default behavior is dry-run. `--apply` may create only:
+
+```text
+.git/hooks/pre-commit
+.github/workflows/recursive-project-tree.yml
+```
+
+Refuse to overwrite non-owned files. Mark generated hooks as bypassable in their header. The CI workflow runs read-only `validate-tree`; it contains no claim that the check is required. Branch-protection configuration remains outside V1.
+
+- [ ] **Step 6: Run Guard tests and dependency checks**
+
+Run:
+
+```bash
+python3 -m unittest -v /private/tmp/test_rpt_guard.py
+python3 -m py_compile \
+  /Users/evan/.codex/skills/recursive-project-tree/scripts/rpt_guard.py \
+  /Users/evan/.codex/skills/recursive-project-tree/scripts/install_git_adapter.py
+rg -n '^(import|from) ' /Users/evan/.codex/skills/recursive-project-tree/scripts
+```
+
+Expected: all twelve tests pass; compilation succeeds; imports are standard-library only.
+
+- [ ] **Step 7: Record reproducible Guard evidence**
+
+Write `guard-tests.md` with the script digests, exact commands, twelve scenario results, before/after fixture digests, exit codes, and residual bypass boundary. Do not copy temporary fixture trees into Kernel.
+
+---
+
+### Task 8: Write the lean skill entrypoint
 
 **Files:**
 - Modify: `/Users/evan/.codex/skills/recursive-project-tree/SKILL.md`
@@ -1091,9 +1224,11 @@ No other frontmatter fields are permitted.
 7. read only the selected Procedure file;
 8. read `executor-model.md` when delegating or claiming independence;
 9. read `recovery.md` on interruption, incomplete effects, writer changes, or human routing;
-10. read `validation.md` before acceptance or integration;
-11. read `kernel-lineage.md` only for provenance questions;
-12. use templates by node type and reject unresolved template tokens before activation.
+10. route every supported protocol mutation through `scripts/rpt_guard.py`;
+11. read `validation.md` before acceptance or integration;
+12. state explicitly when a requested action is advisory, detective, or preventive and name its boundary;
+13. read `kernel-lineage.md` only for provenance questions;
+14. use templates by node type and reject unresolved template tokens before activation.
 
 - [ ] **Step 3: Add an operation routing table**
 
@@ -1140,7 +1275,7 @@ Expected: fewer than 500 lines; every reference is reachable directly from `SKIL
 
 ---
 
-### Task 8: GREEN — validate all V1 fixtures and skill behavior
+### Task 9: GREEN — validate all V1 fixtures and skill behavior
 
 **Files:**
 - Create: `docs/superpowers/evidence/recursive-project-tree-v1/coverage-matrix.md`
@@ -1148,10 +1283,10 @@ Expected: fewer than 500 lines; every reference is reachable directly from `SKIL
 - Modify: skill files only when a failing fixture demonstrates a contract gap
 
 **Interfaces:**
-- Consumes: installed skill, 30 spec fixtures, 19 V1 acceptance criteria, six baseline prompts.
+- Consumes: installed skill, 34 spec fixtures, 21 V1 acceptance criteria, six baseline prompts, and twelve Local Guard scenarios.
 - Produces: fixture-by-fixture evidence and fresh-context behavioral results.
 
-**Acceptance:** V1-AC-01 through V1-AC-19; fixtures 1–30.
+**Acceptance:** V1-AC-01 through V1-AC-21; fixtures 1–34.
 
 - [ ] **Step 1: Run official packaging validation**
 
@@ -1197,7 +1332,7 @@ Use:
 ```markdown
 # Recursive Project Tree V1 — Coverage Matrix
 
-**Spec baseline:** 7961bf2e
+**Spec baseline:** c218c37d
 **Skill path:** /Users/evan/.codex/skills/recursive-project-tree
 **Fixture root:** Record the exact temporary path used by Step 3.
 
@@ -1210,7 +1345,7 @@ Use:
 |---|---|---|---|
 ```
 
-Populate exactly 30 fixture rows, numbered 1 through 30, by copying each fixture's criterion references and expected behavior from spec Section 30. Add exactly two non-fixture rows: AC-08 for runtime dependency absence and AC-10 for removal isolation. Every dynamic cell records an exact observed value or artifact path; result is only `PASS` or `FAIL`. Any fixture that cannot be executed is `FAIL`; `INCONCLUSIVE` is reserved for the fresh-context behavioral and independent-review rows in `forward-tests.md`.
+Populate exactly 34 fixture rows, numbered 1 through 34, by copying each fixture's criterion references and expected behavior from spec Section 30. Add exactly two non-fixture rows: AC-08 for runtime dependency absence and AC-10 for removal isolation. Link the twelve Guard scenario results from `guard-tests.md` to the affected fixture and criterion rows. Every dynamic cell records an exact observed value or artifact path; result is only `PASS` or `FAIL`. Any fixture that cannot be executed is `FAIL`; `INCONCLUSIVE` is reserved for the fresh-context behavioral and independent-review rows in `forward-tests.md`.
 
 - [ ] **Step 5: Re-run the six baseline prompts with the skill**
 
@@ -1292,7 +1427,7 @@ Expected: commit contains only the two evidence files.
 
 ---
 
-### Task 9: Final independent review, removal check, and release verdict
+### Task 10: Final independent review, removal check, and release verdict
 
 **Files:**
 - Create: `docs/superpowers/evidence/recursive-project-tree-v1/final-validation.md`
@@ -1302,7 +1437,7 @@ Expected: commit contains only the two evidence files.
 - Consumes: frozen skill tree, full coverage matrix, forward-test evidence, approved spec.
 - Produces: one final independent verdict and a reproducible release record.
 
-**Acceptance:** All V1 criteria; especially V1-AC-07, V1-AC-08, V1-AC-10, V1-AC-14, V1-AC-15, and V1-AC-19.
+**Acceptance:** All V1 criteria; especially V1-AC-07, V1-AC-08, V1-AC-10, V1-AC-14, V1-AC-15, and V1-AC-19 through V1-AC-21.
 
 - [ ] **Step 1: Freeze the review subject**
 
@@ -1329,7 +1464,10 @@ Ask the Reviewer to attack:
 3. Do any instructions enable drift, retry reset, unsupported acceptance,
    unsafe replay, authority expansion, or false independence?
 4. Is any V1 content redundant enough to remove without weakening the system?
-5. Does the package claim guarantees that its file-only implementation cannot enforce?
+5. Does the package claim guarantees that its file protocol, Local Guard,
+   hooks, or optional CI adapter cannot enforce?
+6. Can a mechanically invalid Guard-routed mutation change canonical files?
+7. Are hook and CI bypass boundaries classified truthfully?
 ```
 
 Require evidence-backed findings and one verdict:
@@ -1368,11 +1506,11 @@ Run:
 
 ```bash
 find /Users/evan/.codex/skills/recursive-project-tree -type f | sort
-rg -n 'database|daemon|standalone CLI|automatic lock|prevents concurrent' \
+rg -n 'database|daemon|standalone CLI|automatic lock|prevents concurrent|unbypassable|preventive' \
   /Users/evan/.codex/skills/recursive-project-tree
 ```
 
-Expected: mentions occur only in exclusions, deferred work, or truthful limitation statements; no runtime script or dependency is required.
+Expected: database, daemon, automatic-lock, and unqualified concurrency-prevention mentions occur only in exclusions, deferred work, or truthful limitation statements. Preventive claims name their boundary. Runtime scripts import only the Python standard library.
 
 - [ ] **Step 6: Write `final-validation.md`**
 
@@ -1381,7 +1519,7 @@ Use:
 ```markdown
 # Recursive Project Tree V1 — Final Validation
 
-**Spec:** 7961bf2e
+**Spec:** c218c37d
 **Skill subject:** Record the manifest digest frozen in Step 1.
 **Validation date:** Record the local ISO date.
 
@@ -1411,9 +1549,12 @@ Use:
 
 ## Residual limitations
 
-- No arbitrary multi-process writer prevention.
+- No arbitrary same-authority filesystem-writer prevention.
 - No automatic semantic proof.
 - No automatic Git integration or cleanup.
+- Hooks remain bypassable.
+- CI prevents integration only when an external authority requires the check
+  and the executor cannot bypass or reconfigure it.
 - No claim of adoption before two real project users.
 
 ## Release verdict
@@ -1421,7 +1562,7 @@ Use:
 APPROVED, BLOCKED, or INCONCLUSIVE with exact reasons.
 ```
 
-Populate exactly 19 rows, `V1-AC-01` through `V1-AC-19`, with direct evidence references and only `PASS` or `FAIL`.
+Populate exactly 21 rows, `V1-AC-01` through `V1-AC-21`, with direct evidence references and only `PASS` or `FAIL`.
 
 - [ ] **Step 7: Run final verification**
 
@@ -1450,25 +1591,27 @@ Expected: the commit contains only `final-validation.md`.
 
 | V1 criterion | Implemented in | Verified in |
 |---|---|---|
-| AC-01 root initialization | Tasks 2–4, 7 | Tasks 8–9 |
-| AC-02 recoverable child spawn | Tasks 3–4 | Tasks 8–9 |
-| AC-03 ordered append-only history | Task 3 | Tasks 8–9 |
-| AC-04 no-progress redesign | Tasks 3–5 | Tasks 8–9 |
-| AC-05 verified immutable return | Tasks 3–4 | Tasks 8–9 |
-| AC-06 Git state separation | Tasks 4–6 | Tasks 8–9 |
-| AC-07 read-only drift validation | Task 6 | Tasks 8–9 |
-| AC-08 no runtime service/dependency | Tasks 2, 7 | Tasks 8–9 |
-| AC-09 routine autonomy | Tasks 4, 7 | Tasks 8–9 |
-| AC-10 removable from targets | Task 2 | Tasks 8–9 |
-| AC-11 recovery without chat | Tasks 3, 6 | Tasks 8–9 |
-| AC-12 Subgoal/node boundary | Tasks 3–4 | Tasks 8–9 |
-| AC-13 Procedure-stack recovery | Tasks 4–6 | Tasks 8–9 |
-| AC-14 six evidence Procedures | Task 5 | Tasks 8–9 |
-| AC-15 truthful executor independence | Tasks 5, 7 | Tasks 8–9 |
-| AC-16 incomplete-effect reconciliation | Tasks 3, 6 | Tasks 8–9 |
-| AC-17 nearest-authority routing | Tasks 4, 6–7 | Tasks 8–9 |
-| AC-18 contiguous contract revision | Task 3 | Tasks 8–9 |
-| AC-19 honest writer-conflict limit | Tasks 6–7 | Tasks 8–9 |
+| AC-01 root initialization | Tasks 2–4, 7–8 | Tasks 9–10 |
+| AC-02 recoverable child spawn | Tasks 3–4, 7 | Tasks 9–10 |
+| AC-03 ordered append-only history | Tasks 3, 7 | Tasks 9–10 |
+| AC-04 no-progress redesign | Tasks 3–5, 7 | Tasks 9–10 |
+| AC-05 verified immutable return | Tasks 3–4, 7 | Tasks 9–10 |
+| AC-06 Git state separation | Tasks 4–7 | Tasks 9–10 |
+| AC-07 deterministic drift validation | Tasks 6–7 | Tasks 9–10 |
+| AC-08 no runtime service/third-party dependency | Tasks 2, 7–8 | Tasks 9–10 |
+| AC-09 routine autonomy | Tasks 4, 8 | Tasks 9–10 |
+| AC-10 removable from targets | Tasks 2, 7 | Tasks 9–10 |
+| AC-11 recovery without chat | Tasks 3, 6–7 | Tasks 9–10 |
+| AC-12 Subgoal/node boundary | Tasks 3–4, 7 | Tasks 9–10 |
+| AC-13 Procedure-stack recovery | Tasks 4–7 | Tasks 9–10 |
+| AC-14 six evidence Procedures | Tasks 5, 8 | Tasks 9–10 |
+| AC-15 truthful executor independence | Tasks 5, 8 | Tasks 9–10 |
+| AC-16 incomplete-effect reconciliation | Tasks 3, 6–7 | Tasks 9–10 |
+| AC-17 nearest-authority routing | Tasks 4, 6–8 | Tasks 9–10 |
+| AC-18 contiguous contract revision | Tasks 3, 7 | Tasks 9–10 |
+| AC-19 honest writer-conflict limit | Tasks 6–8 | Tasks 9–10 |
+| AC-20 default Local Guard | Task 7 | Tasks 9–10 |
+| AC-21 truthful enforcement classification | Tasks 6–8 | Tasks 9–10 |
 
 ## Implementation Stop Conditions
 
