@@ -37,7 +37,7 @@ The desired system is a pure filesystem governance model. It must remain human-r
 6. Separate task completion, parent acceptance, and Git integration.
 7. Make unbound branches, orphaned worktrees, stale candidates, and hidden active descendants visible.
 8. Support a full project form and a lighter stage/task/debug form.
-9. Begin as a global Codex skill plus file templates; defer a standalone CLI until real use proves the interface.
+9. Begin as a global Codex skill plus file templates and a default Local Guard; defer a standalone general-purpose CLI until real use proves any interface beyond the bounded guard commands.
 10. Let an executor pursue an approved goal without routine permission prompts while preserving explicit material gates.
 11. Make Build, Debug, Review, Research, Design, and Integration repeatable evidence-producing Procedures.
 12. Recover the same responsibility, attempts, Subgoals, and Procedure stack after interruption or executor replacement.
@@ -46,6 +46,7 @@ The desired system is a pure filesystem governance model. It must remain human-r
 
 - Replacing Git, worktrees, CI, tests, or domain-specific promotion engines.
 - Building a central project database or universal orchestration runtime.
+- Treating a same-user hook, wrapper, or lock file as a security boundary against an adversarial executor with unrestricted shell access.
 - Automatically merging, deleting, rebasing, or pushing branches.
 - Giving every routine action a human approval gate.
 - Treating an append-only JSONL file as WORM storage.
@@ -139,6 +140,24 @@ The Goal Pursuit result that every node-local acceptance criterion has verified 
 ### 5.14 Materiality
 
 Materiality classifies decisions that require structured adjudication rather than routine plan adaptation. A change is material when it affects contract objective, acceptance, outward scope, exclusions, authority, resource category or ceiling, external effects, risk ceiling, or integration target. Adjudicating a high-severity unresolved finding is also material. Materiality does not by itself mean the adjudicator must be human.
+
+### 5.15 Enforcement Class
+
+Every rule and check is classified by what V1 actually does:
+
+- **Advisory:** tells an executor what it should do but does not itself detect or block non-compliance.
+- **Detective:** mechanically identifies non-compliance and returns evidence after or before an attempted transition.
+- **Preventive:** blocks a mutation or integration through a controlled path before the prohibited state is accepted.
+
+`preventive` is always qualified by its enforcement boundary. A Local Guard can prevent an invalid operation only when the operation is routed through the Guard. A hook can reject its normal invocation path but is bypassable when the caller can disable the hook. A protected CI gate can prevent integration only when the executor lacks permission to bypass or reconfigure that gate.
+
+### 5.16 Local Guard
+
+The default, deterministic adapter that validates and performs bounded filesystem protocol mutations. It reads and writes only the canonical files defined by this design, exposes the minimal interface from Section 27, writes atomically, and refuses a transition when its mechanical preconditions fail. It owns no hidden state and is replaceable because the filesystem protocol remains authoritative.
+
+### 5.17 Protected Integration Adapter
+
+An optional Git/CI adapter that runs Guard validation against a frozen candidate and publishes a required check. It may become a preventive integration boundary only when branch protection or an equivalent external authority requires the check and the executor cannot bypass or reconfigure it.
 
 ## 6. Core invariants
 
@@ -738,7 +757,14 @@ V1 reports these conditions. It never deletes branches or worktrees.
 
 ## 18. Validation layers
 
-Each check is classified by the future implementation as `mechanical` or `adjudicative`. Mechanical checks compare structured fields, identities, digests, paths, transitions, and measured state. Adjudicative checks evaluate semantic purpose, evidence meaning, risk, or whether a plan remains inside a natural-language objective. V1 may guide and record both, but it must never claim that a mechanical validator proved an adjudicative judgment.
+Each check is classified on two independent axes:
+
+1. **Judgment:** `mechanical` or `adjudicative`.
+2. **Enforcement:** `advisory`, `detective`, or `preventive`, with the exact boundary named.
+
+Mechanical checks compare structured fields, identities, digests, paths, transitions, and measured state. Adjudicative checks evaluate semantic purpose, evidence meaning, risk, or whether a plan remains inside a natural-language objective. V1 may guide and record both, but it must never claim that a mechanical validator proved an adjudicative judgment or that a cooperative local control is an unbypassable security boundary.
+
+The default Local Guard makes mechanical validation automatically detective for Guard invocations. A Guard mutation is preventive within the Guard-controlled path because failed preconditions block the write. Advisory semantic rules remain adjudicative until an authorized actor records a verdict. Hooks and optional CI checks consume the same validator output but state their narrower enforcement boundary.
 
 ### 18.1 Structure
 
@@ -1377,7 +1403,22 @@ validate-node
 validate-tree
 ```
 
-The six Procedures are hidden behind `pursue-node`; they are not six unrelated public commands. V1 implements the interface as skill-guided file operations using templates and read-only checks. A later CLI may automate it without changing the file contracts.
+The six Procedures are hidden behind `pursue-node`; they are not six unrelated public commands. V1 implements read-only validation and protocol mutations through the Local Guard wherever a matching Guard command exists. The skill may guide adjudicative work and domain execution, but it must not directly reproduce a Guard-owned mutation. A later general-purpose CLI may extend ergonomics without changing the file contracts.
+
+The Guard has two command families:
+
+```text
+read-only:
+  validate-node | validate-tree | inspect-enforcement
+
+mutating:
+  init-project | spawn-child | activate-child |
+  append-record | submit-return | adjudicate-return
+```
+
+Mutating commands perform preflight validation, write through a temporary file plus atomic replacement, and run post-write validation. Failure leaves the previous canonical file intact or emits an explicit incomplete-operation recovery artifact; it never reports success solely because a write was attempted.
+
+`enter-node`, `pursue-node`, `resume-node`, and `record-decision` remain logical workflow operations. Their mechanical record mutations route through `append-record`; their semantic decisions remain advisory or adjudicative.
 
 ## 28. V1 global skill layout
 
@@ -1386,6 +1427,9 @@ Planned installation:
 ```text
 ~/.codex/skills/recursive-project-tree/
 ├── SKILL.md
+├── scripts/
+│   ├── rpt_guard.py
+│   └── install_git_adapter.py
 ├── references/
 │   ├── domain-model.md
 │   ├── file-contracts.md
@@ -1414,6 +1458,8 @@ The skill and all installed templates are written in English. Conversation with 
 
 Before mutating a tree, the skill completes the canonical Section 20.1 Entry Manifest and evaluates the same Enter gates. It does not maintain a second pre-mutation checklist.
 
+The Guard uses only the Python standard library. It has no database, daemon, network service, or hidden registry. `install_git_adapter.py` is optional and changes a target repository only after explicit authorization. It installs repository-local hook shims or emits CI configuration that invokes the same read-only validator; it never represents hooks alone as unbypassable.
+
 It must not require repeated permission for ordinary in-contract file updates. Material contract, authority, return, and integration decisions remain explicit gates.
 
 The skill does not require subagents or an external model. It uses the current agent by default, may bind a child agent to a Child Node when the runtime supports it, and invokes an independent Reviewer only when the contract or risk policy requires one. It records the actual independence level truthfully.
@@ -1425,29 +1471,57 @@ The skill does not require subagents or an external model. It uses the current a
 - Global skill instructions.
 - Full and light node templates.
 - English file contracts and record examples.
+- A default standard-library Local Guard with deterministic read-only validation and controlled protocol mutations.
+- Explicit `advisory`, `detective`, and `preventive` classification for every normative control, including the precise boundary of preventive claims.
 - Guided root initialization and recoverable two-phase child spawn.
 - Goal Pursuit orientation, Subgoal planning, and Procedure-stack guidance.
 - Six standard Procedure references behind one execution interface.
 - Hybrid executor selection with truthful independence labeling.
 - Checkpoint, interruption reconciliation, and Resume Procedure guidance.
 - Guided ordered decision, approval, Attempt, state-delta, immutable Return, and adjudication updates.
-- Serialized single-writer coordination; detected unsynchronized conflicts block acceptance but arbitrary concurrent writers are not prevented.
-- Read-only validation that labels mechanical results separately from adjudicative judgments.
-- No external dependencies.
+- Serialized single-writer coordination; the Guard refuses a second declared writer and detected unsynchronized conflicts block acceptance, but same-authority arbitrary filesystem writers are not prevented.
+- Read-only validation that labels mechanical results separately from adjudicative judgments and emits stable machine-readable results.
+- Optional repository-local Git hook and CI adapter generation. Installation requires explicit target-repository authorization.
+- No third-party runtime dependencies.
 
 ### Deferred until real adoption
 
-- Standalone CLI.
+- Standalone general-purpose CLI beyond the bounded Local Guard.
 - JSON Schema package.
-- Automatic ULID/digest generation helper.
 - Hash-chained ledgers and signed checkpoints.
 - Multi-process locking.
 - Generated Markdown projections.
 - Automatic branch/worktree cleanup.
 - Central portfolio registry.
 - Database or daemon.
+- OS-user separation, ACL management, or sandbox provisioning.
 
 Two real project adopters and a stable file contract are required before extracting a standalone package or service.
+
+### 29.1 Enforcement guarantees and threat boundary
+
+V1 supports three threat levels:
+
+| Threat | V1 response | Guarantee |
+|---|---|---|
+| Cooperative executor following the skill | Skill instructions plus Guard | Full protocol path and validation |
+| Buggy, forgetful, or shortcutting executor using the normal workflow | Guard preconditions, postconditions, hook/CI checks | Detection and normal-path prevention |
+| Adversarial executor with unrestricted same-user shell and filesystem authority | Truthful detection where history remains; optional protected integration | No claim of local non-bypassability |
+
+The core protocol remains useful if every adapter is removed. Local Guard removal removes automation and normal-path prevention, not the meaning of existing nodes. Git/CI integration is optional and may not be installed during discovery or ordinary validation.
+
+For a Git-bound project, the enforcement report must distinguish:
+
+```text
+hook_present
+hook_bypassable
+ci_check_present
+ci_check_required
+executor_can_bypass
+preventive_boundary
+```
+
+Only a required external check that the executor cannot bypass may be reported as preventing integration. Everything else is advisory or detective defense in depth.
 
 ## 30. Test and acceptance scenarios
 
@@ -1483,6 +1557,10 @@ Section 31 is the binding acceptance contract. The implementation plan must veri
 28. Root or real-mainline integration triggers human confirmation. [V1-AC-17]
 29. A Procedure switch without `return_to` or an ordered stack event is rejected as drift. [V1-AC-13]
 30. A replacement node cannot be used to evade the three-attempt redesign rule. [V1-AC-04, V1-AC-11]
+31. A direct invalid mutation through the Local Guard is refused before canonical files change, and the refusal identifies the failed mechanical precondition. [V1-AC-20]
+32. A file is modified outside the Guard; validation detects the resulting sequence, digest, lifecycle, or projection inconsistency without claiming that V1 prevented the raw write. [V1-AC-20, V1-AC-21]
+33. A repository-local hook is installed and then bypassed; the enforcement report continues to label it bypassable and does not upgrade it to a security boundary. [V1-AC-21]
+34. A CI check exists but is not required, then becomes required under an authority the executor cannot change; the reported class changes from detective to preventive-for-integration. [V1-AC-21]
 
 `V1-AC-08` and `V1-AC-10` are verified by installation, dependency, and removal checks rather than responsibility-tree fixtures.
 
@@ -1496,8 +1574,8 @@ V1 is acceptable when:
 4. **V1-AC-04:** The third no-progress Attempt for one progress scope produces a redesign Return Packet, prevents a fourth, and cannot be reset by repackaging the same work.
 5. **V1-AC-05:** A parent verifies every accepted criterion, adjudicates an immutable Return Packet without editing child history, and follows the normative lifecycle transition.
 6. **V1-AC-06:** A Git-bound local candidate, current-parent combination verification, and actual integration remain distinct.
-7. **V1-AC-07:** Read-only validation identifies structural, revision, ledger, lifecycle, descendant, writer-conflict, Return, and Git drift failures and labels mechanical versus adjudicative results truthfully.
-8. **V1-AC-08:** No database, background service, project-specific runtime, or automatic multi-process lock is required.
+7. **V1-AC-07:** Deterministic read-only validation identifies structural, revision, ledger, lifecycle, descendant, writer-conflict, Return, and Git drift failures and labels mechanical versus adjudicative results truthfully.
+8. **V1-AC-08:** No database, background service, project-specific runtime, third-party runtime package, or automatic multi-process lock is required.
 9. **V1-AC-09:** Routine in-scope work continues without repeated approval prompts, while the authority matrix routes material decisions.
 10. **V1-AC-10:** The system can be removed without modifying referenced source repositories.
 11. **V1-AC-11:** A fresh executor reconstructs contracts, progress scope, Subgoals, Procedure stack, attempts, findings, descendants, and live state without relying on chat history.
@@ -1509,3 +1587,5 @@ V1 is acceptable when:
 17. **V1-AC-17:** Routine execution remains autonomous, while the authority matrix routes material ambiguity, expansion, risk, disagreement, redesign, and final integration to the nearest authorized parent or human.
 18. **V1-AC-18:** Contract revision 1 and approved amendments form one contiguous, digest-bound, cumulatively reviewed effective contract.
 19. **V1-AC-19:** V1 truthfully guarantees serialized coordinated ownership and blocks acceptance after detected writer conflict without claiming to prevent arbitrary concurrent writers.
+20. **V1-AC-20:** The default Local Guard implements the bounded read-only and mutating command families, refuses mechanically invalid transitions before canonical mutation, writes atomically, validates postconditions, and emits stable machine-readable results without hidden project state.
+21. **V1-AC-21:** Every normative control is classified as advisory, detective, or preventive with its exact enforcement boundary; hooks are identified as bypassable, and only an externally required check outside the executor's authority may claim to prevent integration.
