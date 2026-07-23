@@ -2,6 +2,26 @@
 
 > This file persists context between Claude Code sessions.
 
+## Session 2026-07-23 — Recursive Project Tree V1 implementation plan
+
+- The approved filesystem-governance design is at
+  `docs/superpowers/specs/2026-07-22-recursive-project-tree-design.md`
+  (`7961bf2e`). It remains design-complete; the global skill is not yet
+  implemented.
+- Wrote the V1 implementation plan at
+  `docs/superpowers/plans/2026-07-23-recursive-project-tree-v1.md`.
+  It installs directly to `~/.codex/skills/recursive-project-tree/`,
+  keeps runtime dependencies at zero, writes development evidence back
+  to Kernel, and requires all 30 fixtures plus V1-AC-01 through 19.
+- One isolated `spec-reviewer` was requested as Opus and actually ran
+  on `glm-5.2`; verdict `ACCEPTABLE_WITH_FIXES`. All five findings were
+  independently accepted and closed: blocking `INCONCLUSIVE` evidence,
+  official-tooling stop conditions, operational fresh-context rules,
+  fail-fast Procedure checks, and exact root template bindings.
+- Implementation has not started. The next session should execute the
+  plan from Task 1 RED baseline. Preserve unrelated untracked
+  `docs/evaluations/`.
+
 ## Session 2026-07-20 (cont.) — THE STACKS M1 ships (feat/the-stacks)
 
 - Isaac showed the SUKIMA project (claygarden.jp/series) — floating
