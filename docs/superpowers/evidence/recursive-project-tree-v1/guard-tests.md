@@ -6,11 +6,12 @@ Date: 2026-07-23
 
 | Subject | SHA-256 |
 |---|---|
-| `/Users/evan/.codex/skills/recursive-project-tree/scripts/rpt_guard.py` | `980274527dd60c75c488dc5fb47613c0d320dfcd529ea1c6338b502b120966b2` |
+| `/Users/evan/.codex/skills/recursive-project-tree/scripts/rpt_guard.py` | `fd8740312b723dea4a4e9bb9580948cd73accd41eb5a9508488603e5093defbb` |
 | `/Users/evan/.codex/skills/recursive-project-tree/scripts/install_git_adapter.py` | `a348d47d1c1f353531fd390fece9fa47354e19db8eef57c7e8ceffb040790b1d` |
 | `/private/tmp/test_rpt_guard.py` | `f94a1cd87c8b9c7c5580120775efe42caadaf5f4cde771dc3f0b67fd4e2480ff` |
+| `/private/tmp/test_rpt_guard_commands.py` | `9c6035e3a3d4617fb2d04c36d26490e69750e650be656871cc8f44cfe2df6cdc` |
 
-The test module is temporary authoring evidence. Fixture trees and Git
+The test modules are temporary authoring evidence. Fixture trees and Git
 repositories were created only below the system temporary directory and were
 removed by `TemporaryDirectory`; no hook or CI adapter was installed into
 Kernel or another real repository.
@@ -58,6 +59,47 @@ Exit `0`:
 Ran 12 tests in 12.630s
 OK
 ```
+
+## Command-completion RED/GREEN
+
+`/private/tmp/test_rpt_guard_commands.py` adds three subprocess-only command
+tests. Its initial RED observed the missing command implementations: independent
+`activate-child` still dispatched to spawn, while `submit-return` and
+`adjudicate-return` returned `INV-001` / `not implemented`.
+
+After the minimal command implementation, each command test passed directly:
+
+```bash
+PYTHONPYCACHEPREFIX=/private/tmp/rpt-guard-pycache \
+  python3 /private/tmp/test_rpt_guard_commands.py \
+  GuardCommandTests.test_activate_is_an_independent_command -v
+# Ran 1 test ... OK
+
+PYTHONPYCACHEPREFIX=/private/tmp/rpt-guard-pycache \
+  python3 /private/tmp/test_rpt_guard_commands.py \
+  GuardCommandTests.test_submit_creates_an_immutable_packet -v
+# Ran 1 test ... OK
+
+PYTHONPYCACHEPREFIX=/private/tmp/rpt-guard-pycache \
+  python3 /private/tmp/test_rpt_guard_commands.py \
+  GuardCommandTests.test_adjudicate_requires_the_direct_parent -v
+# Ran 1 test ... OK
+```
+
+The baseline suite was then rerun unchanged:
+
+```bash
+PYTHONPYCACHEPREFIX=/private/tmp/rpt-guard-pycache \
+  python3 /private/tmp/test_rpt_guard.py -v
+# Ran 12 tests in 15.557s
+# OK
+```
+
+| ID | Command result |
+|---|---|
+| GUARD-CMD-01 | PASS — `activate-child` has its own request schema/dispatch and verifies the existing direct-child/intent binding without re-running spawn. |
+| GUARD-CMD-02 | PASS — `submit-return` exclusively creates `returns/RETURN-NNNN.md`, returns its SHA-256 digest, and moves the child to `parent_verdict: pending` under the direct parent writer. |
+| GUARD-CMD-03 | PASS — `adjudicate-return` checks the direct parent identity and writer, binds the immutable packet digest, records a child-ledger approval with criterion verification, and releases the writer on accepted closure. |
 
 The fixture digest column below records the SHA-256 relation asserted by the
 black-box test. Fixtures are intentionally ephemeral, so their random-path-
@@ -121,12 +163,11 @@ direct_same_authority_filesystem_write
 V1 detects surviving drift evidence but does not claim to prevent arbitrary
 same-user raw filesystem writes.
 
-## Residual implementation concern
+## Bounded command coverage
 
-The twelve required scenarios exercise `init-project`, `spawn-child`,
+The twelve baseline scenarios exercise `init-project`, `spawn-child`,
 `append-record`, `validate-node`, `validate-tree`, `inspect-enforcement`, and
-both Git adapter modes. `submit-return` and `adjudicate-return` are present in
-the command surface but are not implemented by this bounded test-driven slice;
-`activate-child` currently shares the spawn implementation and has not received
-an independent black-box scenario. These interfaces require a later RED before
-they can be claimed complete.
+both Git adapter modes. The three additional subprocess scenarios cover the
+previous command-surface gaps: independent child activation, immutable return
+submission, and direct-parent return adjudication. They do not claim broad
+workflow coverage beyond those concrete command contracts.
