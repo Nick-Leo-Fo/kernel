@@ -6,10 +6,11 @@ Date: 2026-07-23
 
 | Subject | SHA-256 |
 |---|---|
-| `/Users/evan/.codex/skills/recursive-project-tree/scripts/rpt_guard.py` | `fd8740312b723dea4a4e9bb9580948cd73accd41eb5a9508488603e5093defbb` |
-| `/Users/evan/.codex/skills/recursive-project-tree/scripts/install_git_adapter.py` | `a348d47d1c1f353531fd390fece9fa47354e19db8eef57c7e8ceffb040790b1d` |
+| `/Users/evan/.codex/skills/recursive-project-tree/scripts/rpt_guard.py` | `d1c89e85209ba36c82cecb42900dd4755df9f1b420a429e65f097ea899723200` |
+| `/Users/evan/.codex/skills/recursive-project-tree/scripts/install_git_adapter.py` | `b5099fa49e3524f741dd6b017f72e0f7c358a651beff3ec2aef5e24011341f5c` |
 | `/private/tmp/test_rpt_guard.py` | `f94a1cd87c8b9c7c5580120775efe42caadaf5f4cde771dc3f0b67fd4e2480ff` |
 | `/private/tmp/test_rpt_guard_commands.py` | `9c6035e3a3d4617fb2d04c36d26490e69750e650be656871cc8f44cfe2df6cdc` |
+| `/private/tmp/test_rpt_guard_security.py` | `075c1da38d1a459e88ed6dce886742a880b87cdbc45ba4a8a172cfabb83e80ca` |
 
 The test modules are temporary authoring evidence. Fixture trees and Git
 repositories were created only below the system temporary directory and were
@@ -101,6 +102,41 @@ PYTHONPYCACHEPREFIX=/private/tmp/rpt-guard-pycache \
 | GUARD-CMD-02 | PASS — `submit-return` exclusively creates `returns/RETURN-NNNN.md`, returns its SHA-256 digest, and moves the child to `parent_verdict: pending` under the direct parent writer. |
 | GUARD-CMD-03 | PASS — `adjudicate-return` checks the direct parent identity and writer, binds the immutable packet digest, records a child-ledger approval with criterion verification, and releases the writer on accepted closure. |
 
+## Security review RED/GREEN
+
+Three public-interface subprocess tests in
+`/private/tmp/test_rpt_guard_security.py` reproduced the reviewer findings.
+Each selector was run independently so inherited baseline tests were not
+duplicated. The initial RED established that symlinked roots/targets could
+escape, Return packet mutation was not validated and could be rebound with a
+caller digest, and duplicate or unknown criterion IDs were accepted.
+
+After the minimal repair, the exact selectors passed:
+
+```bash
+PYTHONPYCACHEPREFIX=/private/tmp/rpt-guard-pycache \
+  python3 /private/tmp/test_rpt_guard_security.py \
+  GuardSecurityTests.test_symlink_escape_is_refused_for_spawn_and_adapter_targets \
+  GuardSecurityTests.test_packet_tampering_fails_validation_and_cannot_rebind_digest \
+  GuardSecurityTests.test_adjudication_requires_exact_contract_criterion_set -v
+# Ran 3 tests in 10.043s
+# OK
+```
+
+| ID | Security result |
+|---|---|
+| GUARD-SEC-01 | PASS — root aliases, symlinked node paths, spawn targets, and hook/CI adapter targets are refused before out-of-tree writes. |
+| GUARD-SEC-02 | PASS — `RET-003` validates submitted packets against the authoritative ledger digest; adjudication must match that digest and current bytes. |
+| GUARD-SEC-03 | PASS — verification IDs equal the unique active Contract criterion set; accepted verdicts are passed and cite the bound packet. |
+
+Final explicitly selected regression results:
+
+```text
+baseline: Ran 12 tests in 13.104s — OK
+commands: Ran 3 tests in 4.709s — OK
+security: Ran 3 tests in 10.043s — OK
+```
+
 The fixture digest column below records the SHA-256 relation asserted by the
 black-box test. Fixtures are intentionally ephemeral, so their random-path-
 dependent raw hashes are not retained after teardown; `same` means the test
@@ -167,7 +203,8 @@ same-user raw filesystem writes.
 
 The twelve baseline scenarios exercise `init-project`, `spawn-child`,
 `append-record`, `validate-node`, `validate-tree`, `inspect-enforcement`, and
-both Git adapter modes. The three additional subprocess scenarios cover the
-previous command-surface gaps: independent child activation, immutable return
-submission, and direct-parent return adjudication. They do not claim broad
+both Git adapter modes. The additional command and security subprocess
+scenarios cover independent child activation, immutable return submission,
+direct-parent adjudication, canonical-path containment, packet-digest
+validation, and exact criterion verification. They do not claim broader
 workflow coverage beyond those concrete command contracts.
