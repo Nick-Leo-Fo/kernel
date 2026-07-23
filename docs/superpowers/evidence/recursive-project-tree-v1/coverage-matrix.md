@@ -1,5 +1,10 @@
 # Recursive Project Tree V1 — Coverage Matrix
 
+Rows that exercise Guard commands are mechanical implementation tests. Rows
+that construct and compare protocol states without a Guard mutation are
+deterministic protocol conformance scenarios; they demonstrate the documented
+advisory/adjudicative rule, not unbypassable enforcement.
+
 **Spec baseline:** 14b9adb3
 **Skill path:** /Users/evan/.codex/skills/recursive-project-tree
 **Fixture root:** `/private/tmp/recursive-project-tree-fixtures-final-Man73Z`
@@ -40,7 +45,7 @@
 | 31 | V1-AC-20 | invalid Guard mutation is refused before bytes change with a mechanical blocking reason | A direct invalid mutation through the Local Guard is refused before canonical files change, and the refusal identifies the failed mechanical precondition. | `result=PASS`; exact command/assertion and observed payload are recorded at `/private/tmp/recursive-project-tree-fixtures-final-Man73Z/fixture-31/evidence.json` | `/private/tmp/recursive-project-tree-fixtures-final-Man73Z/fixture-31/evidence.json`; [GUARD-02](guard-tests.md) | PASS |
 | 32 | V1-AC-20, V1-AC-21 | raw edit remains possible but validate-node detects it as detective drift | A file is modified outside the Guard; validation detects the resulting sequence, digest, lifecycle, or projection inconsistency without claiming that V1 prevented the raw write. | `result=PASS`; exact command/assertion and observed payload are recorded at `/private/tmp/recursive-project-tree-fixtures-final-Man73Z/fixture-32/evidence.json` | `/private/tmp/recursive-project-tree-fixtures-final-Man73Z/fixture-32/evidence.json`; [GUARD-09](guard-tests.md) | PASS |
 | 33 | V1-AC-21 | installed local hook remains explicitly bypassable and detective | A repository-local hook is installed and then bypassed; the enforcement report continues to label it bypassable and does not upgrade it to a security boundary. | `result=PASS`; exact command/assertion and observed payload are recorded at `/private/tmp/recursive-project-tree-fixtures-final-Man73Z/fixture-33/evidence.json` | `/private/tmp/recursive-project-tree-fixtures-final-Man73Z/fixture-33/evidence.json`; [GUARD-10](guard-tests.md) | PASS |
-| 34 | V1-AC-21 | forgeable local CI evidence remains detective; V1 cannot authenticate an external non-bypassable boundary | A CI check and locally supplied authority assertion are inspected. Because the executor can forge that file, the report remains detective and explicitly records that external authentication is absent. A real preventive-for-integration classification remains deployment evidence outside V1's local authenticator. | Superseded by the final Task 10 run; exact observed payload is recorded in `/private/tmp/recursive-project-tree-final-20260723c.json` and its fixture root. | [GUARD-11](guard-tests.md); GUARD-12 is superseded because its local JSON was not authenticated | PASS |
+| 34 | V1-AC-21 | forgeable local CI evidence remains detective; V1 cannot authenticate an external non-bypassable boundary | A CI check and locally supplied authority assertion are inspected. Because the executor can forge that file, the report remains detective and explicitly records that external authentication is absent. A real preventive-for-integration classification remains deployment evidence outside V1's local authenticator. | Superseded by the final Task 10 run; exact observed payload is recorded in `/private/tmp/recursive-project-tree-final-20260723d.json` and its fixture root. | [GUARD-11](guard-tests.md); GUARD-12 is superseded because its local JSON was not authenticated | PASS |
 
 ## Non-fixture checks
 

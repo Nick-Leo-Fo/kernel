@@ -156,7 +156,7 @@ equality.
 | GUARD-09 | PASS — raw sequence drift was detected as detective, with no prevention claim | `validate-node=2` | validator: `same -> same` after the prior raw edit |
 | GUARD-10 | PASS — dry-run changed nothing; applied local hook was reported present and bypassable | inspect `0`, dry-run `0`, apply `0`, inspect `0` | inspect calls `same -> same`; fixture hook apply changed only the temporary repo |
 | GUARD-11 | PASS — workflow presence without external requirement remained detective | inspect `0`, CI apply `0`, inspect `0` | inspect calls `same -> same`; fixture CI apply changed only the temporary repo |
-| GUARD-12 | PASS — verified externally required, non-bypassable CI reported preventive at the integration boundary | inspect `0`, CI apply `0`, inspect-with-evidence `0` | final inspect `same -> same` |
+| GUARD-12 | SUPERSEDED — the earlier test incorrectly treated executor-writable JSON as proof of an external, non-bypassable CI boundary. Final fixture 34 requires the same input to remain detective and report `external_evidence_authenticated:false`. | historical inspect calls exited `0`; see final Task 10 fixture 34 | historical inspect was read-only; its preventive classification is not current evidence |
 
 GUARD-06 and GUARD-07 inject failures through a temporary
 `sitecustomize.py` supplied only to the subprocess. The production scripts

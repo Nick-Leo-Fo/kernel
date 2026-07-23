@@ -55,7 +55,7 @@ FIXTURES = [
     (31, ["V1-AC-20"], "A direct invalid mutation through the Local Guard is refused before canonical files change, and the refusal identifies the failed mechanical precondition."),
     (32, ["V1-AC-20", "V1-AC-21"], "A file is modified outside the Guard; validation detects the resulting sequence, digest, lifecycle, or projection inconsistency without claiming that V1 prevented the raw write."),
     (33, ["V1-AC-21"], "A repository-local hook is installed and then bypassed; the enforcement report continues to label it bypassable and does not upgrade it to a security boundary."),
-    (34, ["V1-AC-21"], "A CI check exists but is not required, then becomes required under an authority the executor cannot change; the reported class changes from detective to preventive-for-integration."),
+    (34, ["V1-AC-21"], "A CI check and locally supplied authority assertion remain detective because V1 cannot authenticate an external, non-bypassable boundary from executor-writable JSON."),
 ]
 
 
