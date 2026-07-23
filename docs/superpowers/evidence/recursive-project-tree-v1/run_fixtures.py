@@ -578,8 +578,8 @@ def run_fixture(number: int, h: Harness, directory: Path) -> tuple[bool, Any, st
         local_code, local = h.guard_command("inspect-enforcement", repo)
         evidence = h.write_json(directory, "external-enforcement", {"schema_version": "rpt-enforcement-evidence-v1", "check_name": "recursive-project-tree", "ci_check_required": True, "executor_can_bypass": False, "verified_by": {"kind": "external_authority", "id": "branch-protection"}, "verified_at": FIXED_TIME})
         external_code, external = h.guard_command("inspect-enforcement", repo, evidence=evidence)
-        passed = applied_code.returncode == local_code.returncode == external_code.returncode == 0 and local.get("enforcement_class") == "detective" and external.get("enforcement_class") == "preventive" and external.get("enforcement", {}).get("preventive_boundary") == "integration"
-        return passed, {"adapter": applied, "local": local, "external": external}, "CI changes from detective to preventive-for-integration only with external non-bypassable evidence"
+        passed = applied_code.returncode == local_code.returncode == external_code.returncode == 0 and local.get("enforcement_class") == "detective" and external.get("enforcement_class") == "detective" and external.get("external_evidence_authenticated") is False and external.get("enforcement", {}).get("preventive_boundary") == "none"
+        return passed, {"adapter": applied, "local": local, "external": external}, "forgeable local CI evidence remains detective; V1 cannot authenticate an external non-bypassable boundary"
     raise AssertionError(number)
 
 
