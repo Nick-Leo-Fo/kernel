@@ -28,13 +28,22 @@ active node's Review Procedure.
 The owner follows this controller:
 
 ```text
-preflight request
-→ invoke reviewer
-→ runner failure?
-    yes → preserve result → self-audit framing → rebuild once → retry
-          → second failure → write framing feedback → stop
-    no  → independently adjudicate every finding
-          → apply authorized necessary fixes
+local preflight
+→ local invocation/input/config valid?
+    no  → correct locally before any external reviewer call, or stop as a
+          local setup failure
+    yes → external reviewer call 1
+          → invocation failure?
+              yes → preserve result → self-audit framing → rebuild once
+                    → external reviewer call 2
+                    → invocation failure?
+                        yes → write framing feedback → stop
+                        no  → owner adjudication
+              no  → owner adjudication
+owner adjudication
+→ accepted or unresolved material finding?
+    yes → pause current stage → record disposition → resolve or escalate
+    no  → apply authorized necessary fixes
           → materially changed subject? refreeze and re-review
           → clearance threshold met? continue next authorized stage
           → otherwise invoke the next required independent reviewer
@@ -42,6 +51,10 @@ preflight request
 
 Existing permission and `--no-proxy` recovery remains inside one invocation
 attempt. A substantive `BLOCKED` verdict is not a framing failure.
+
+At most two external reviewer calls are permitted in one invocation-failure
+sequence: the initial request and one rebuilt-request retry. A local preflight
+failure is not a reviewer invocation and cannot be used to add external calls.
 
 ### Observable result classification
 
@@ -51,10 +64,10 @@ The runner result is classified before any semantic adjudication:
   `BLOCKED` remains a substantive verdict and enters owner adjudication.
 - No structured result, or `status: failed` after permitted permission/proxy
   recovery, is an invocation failure with no verdict.
-- A correctable local invocation, input, or configuration error is repaired
-  without changing the request and does not consume the rebuilt-request retry.
-- If the unchanged invocation still fails, the owner uses the one
-  rebuilt-request retry below.
+- A correctable local invocation, input, or configuration error is found and
+  repaired during preflight, before the first external reviewer call.
+- If local preflight cannot establish a valid invocation, the owner stops with
+  a local setup failure; it does not consume or expand the two-call sequence.
 
 ## Request repair boundary
 
@@ -78,8 +91,27 @@ backend failure without evidence.
 
 ## Clearance policy
 
+For this contract:
+
+- **preflight** means local validation of the five required request sections,
+  readable evidence paths, selected role, runner arguments, and local
+  configuration before an external reviewer process is started;
+- **request framing** means the structural composition and claim-to-evidence
+  mapping of those five sections, without changing claim substance;
+- **direct parent** means the immediate owning node that accepts or rejects the
+  current node's return;
+- **acceptance set** means the named completion conditions plus the review-gate
+  facts—task size, required clearances, roles, and independence—that must hold
+  for the current subject;
+- **Local Guard** means RPT's local preventive command for protocol mutations;
+  a Guard-routed mutation is one submitted through that command rather than a
+  direct file edit.
+
 The active node owner assigns and freezes task size before the first review.
-The direct parent may reject the assignment during acceptance. A task is
+The direct parent may reject the assignment during acceptance. Task-size
+rejection invalidates the current review gate because task size belongs to the
+acceptance set. The owner records the reason, freezes the corrected task size
+and subject, and obtains the full required clearance count again. A task is
 `small` only when all of these are true:
 
 - one localized artifact or behavior is reviewed;
@@ -122,6 +154,10 @@ The owner may reject a nitpick, irrelevant concern, or severity inflation with
 an evidence-backed reason and still issue clearance. A design or architecture
 finding may not be skipped: it must be resolved, disproven with direct
 evidence, or escalated to the authority that owns the disputed decision.
+Any accepted or unresolved material finding pauses the current stage until it
+is resolved, disproved, or escalated to the owning authority. Additional
+reviewer calls cannot resolve an accepted material finding and must not be used
+as votes to bypass it.
 
 `IMPORTANT` is a `HIGH` alias used by external review systems. An equivalent
 material finding is any label that the active reviewer contract defines as
@@ -165,6 +201,7 @@ mutations.
    boundary and routes to the continuation contract.
 3. RPT Review defines task-size clearance, retry, owner adjudication, re-review,
    and automatic continuation.
-4. A deterministic script refuses successful results, records two failures
-   atomically, and preserves request hashes, sizes, and the caller diagnosis.
+4. A deterministic script refuses each result unless its `status` is `failed`,
+   atomically writes one feedback artifact containing both failure envelopes,
+   and preserves request hashes, sizes, and the caller diagnosis.
 5. Existing project-review tests, RPT fixtures, and both skill validators pass.
