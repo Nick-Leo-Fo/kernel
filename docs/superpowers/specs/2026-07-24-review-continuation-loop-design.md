@@ -33,13 +33,17 @@ local preflight
     no  → correct locally before any external reviewer call, or stop as a
           local setup failure
     yes → external reviewer call 1
-          → invocation failure?
-              yes → preserve result → self-audit framing → rebuild once
+          → substantive completed review?
+              yes → owner adjudication
+              no  → invocation failure or framing-inconclusive
+                    → preserve result → self-audit framing → rebuild once
                     → external reviewer call 2
-                    → invocation failure?
-                        yes → write framing feedback → stop
-                        no  → owner adjudication
-              no  → owner adjudication
+                    → substantive completed review?
+                        yes → owner adjudication
+                        no  → preserve both results
+                              → both status:failed?
+                                  yes → write framing feedback → stop
+                                  no  → report unresolved mixed gap → stop
 owner adjudication
 → accepted or unresolved material finding?
     yes → pause current stage → record disposition → resolve or escalate
@@ -52,9 +56,11 @@ owner adjudication
 Existing permission and `--no-proxy` recovery remains inside one invocation
 attempt. A substantive `BLOCKED` verdict is not a framing failure.
 
-At most two external reviewer calls are permitted in one invocation-failure
-sequence: the initial request and one rebuilt-request retry. A local preflight
-failure is not a reviewer invocation and cannot be used to add external calls.
+One review round has one shared retry budget. At most two controller-level
+external reviewer calls are permitted in one review round: the initial request
+and one rebuilt-request retry. A framing-inconclusive outcome consumes the same
+retry as an invocation failure. A local preflight failure is not a reviewer
+invocation and cannot be used to add external calls.
 
 ### Observable result classification
 
@@ -62,6 +68,10 @@ The runner result is classified before any semantic adjudication:
 
 - `status: success` plus exactly one valid verdict is a substantive review.
   `BLOCKED` remains a substantive verdict and enters owner adjudication.
+- A completed review is framing-inconclusive only when it cannot answer the
+  selected role's decision because the decision is ambiguous or role-mismatched,
+  target identity is unclear, or authorized available evidence was omitted.
+  It consumes the one shared retry budget rather than entering adjudication.
 - No structured result, or `status: failed` after permitted permission/proxy
   recovery, is an invocation failure with no verdict.
 - A correctable local invocation, input, or configuration error is found and
@@ -83,11 +93,14 @@ model, timeout, and claim coverage. It may:
 It may not change the reviewed claim, hide adverse evidence, narrow required
 coverage, add unsupported evidence, or steer toward a desired verdict.
 
-After a second failed runner result, stop and write one durable diagnostic
-under `/Users/evan/dev/DOCS/reviewer_framing_feedback`. The diagnostic records
-both request identities and failure envelopes, the repair delta, the caller's
-causal diagnosis, and uncertainty. It must not claim framing caused an opaque
-backend failure without evidence.
+After the second non-substantive outcome, stop without a third call. When both
+results have `status: failed`, write one durable diagnostic under
+`/Users/evan/dev/DOCS/reviewer_framing_feedback`. It records both request
+identities and failure envelopes, the repair delta, the caller's causal
+diagnosis, and uncertainty. For a mixed framing-inconclusive/runner-failure
+sequence, preserve both complete results and report the unresolved gap; do not
+misclassify the successful result to satisfy the two-failed-result writer. No
+diagnostic may claim framing caused an opaque backend failure without evidence.
 
 ## Clearance policy
 
