@@ -67,8 +67,14 @@ The runner result is classified before any semantic adjudication:
 - A completed review that criticizes request framing remains substantive. The
   owner adjudicates that criticism and may authorize a corrected, newly frozen
   review round; it may not relabel the result as an invocation failure.
-- No structured result, or `status: failed` after permitted permission/proxy
-  recovery, is an invocation failure with no verdict.
+- `status: failed` with `stage: input` or `stage: configuration` is a local
+  setup failure. Correct the unchanged local request, role, path, argument, or
+  configuration without consuming the retry; if it cannot be corrected within
+  current authority, stop as a local setup failure.
+- `status: failed` with `stage: backend` or `stage: response` after the external
+  process starts is an invocation failure with no verdict. An unstructured
+  failure is classified from process-start evidence; absent that evidence,
+  fail closed as local setup rather than spending the retry.
 - A correctable local invocation, input, or configuration error is found and
   repaired during preflight, before the first external reviewer call.
 - If local preflight cannot establish a valid invocation, the owner stops with
@@ -151,6 +157,11 @@ evidence, direct no-effect evidence, rationale, and deciding authority. The
 owner invalidates clearance when no-effect cannot be proven; silence or absence
 from the original manifest is not no-effect evidence.
 
+A non-material correction is a change outside the frozen subject for which
+that external change record proves no affected supplied claim, proving
+evidence, acceptance-set item, or evidence boundary. Any frozen-subject byte
+or membership change is material regardless of apparent semantics.
+
 One reviewer clearance exists when the owner records that:
 
 - the review completed successfully and is bound to the current subject;
@@ -161,7 +172,7 @@ One reviewer clearance exists when the owner records that:
 - any material subject change was re-reviewed.
 
 The owner may reject a nitpick, irrelevant concern, or severity inflation with
-an evidence-backed reason and still issue clearance. A design or architecture
+direct evidence and still issue clearance. A design or architecture
 finding may not be skipped: it must be resolved, disproven with direct
 evidence, or escalated to the authority that owns the disputed decision.
 Any accepted or unresolved material finding pauses the current stage until it
