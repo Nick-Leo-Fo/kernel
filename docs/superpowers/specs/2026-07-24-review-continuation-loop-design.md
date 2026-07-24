@@ -159,6 +159,31 @@ is resolved, disproved, or escalated to the owning authority. Additional
 reviewer calls cannot resolve an accepted material finding and must not be used
 as votes to bypass it.
 
+### RPT verdict translation
+
+Raw `project-review` verdicts and findings remain immutable evidence. The RPT
+owner appends finding dispositions and computes the final RPT lifecycle verdict;
+it never rewrites the external result. No RPT verdict follows from
+`ACCEPTABLE`, `ACCEPTABLE_WITH_FIXES`, or `BLOCKED` alone.
+
+- `ACCEPTABLE` can become `approved` only when every RPT exit condition holds,
+  or `approved_with_nonblocking_findings` when only recorded nonblocking
+  findings remain.
+- `ACCEPTABLE_WITH_FIXES` is `changes_required` while an accepted correction
+  remains. After verified repair and required re-review, the final result is
+  recomputed from the current subject.
+- `BLOCKED` is `changes_required` when the owner accepts an actionable material
+  correction within current authority. It is `inconclusive` with
+  `needs_parent` when evidence, independence, subject identity, or deciding
+  authority is missing or disputed. Override requires the complete record
+  below plus every ordinary RPT exit condition.
+- Missing acceptance evidence, unavailable required independence, or a changed
+  or unverifiable subject always produces `inconclusive` with `needs_parent`,
+  regardless of the external verdict.
+
+The RPT Review Procedure owns the exact finding-status translation and final
+mapping table.
+
 `IMPORTANT` is a `HIGH` alias used by external review systems. An equivalent
 material finding is any label that the active reviewer contract defines as
 acceptance-blocking. `MEDIUM` and `LOW` do not block clearance unless the active
