@@ -56,6 +56,7 @@ FIXTURES = [
     (32, ["V1-AC-20", "V1-AC-21"], "A file is modified outside the Guard; validation detects the resulting sequence, digest, lifecycle, or projection inconsistency without claiming that V1 prevented the raw write."),
     (33, ["V1-AC-21"], "A repository-local hook is installed and then bypassed; the enforcement report continues to label it bypassable and does not upgrade it to a security boundary."),
     (34, ["V1-AC-21"], "A CI check and locally supplied authority assertion remain detective because V1 cannot authenticate an external, non-bypassable boundary from executor-writable JSON."),
+    (35, ["V1-AC-03", "V1-AC-20", "V1-AC-21"], "Guard-generated ledger timestamps are real UTC observations and every supported post-initialization Guard result, including refusal and validation, has one immutable non-authoritative audit event."),
 ]
 
 
@@ -70,6 +71,24 @@ def digest_tree(root: Path) -> str:
     for path in sorted(root.rglob("*"), key=lambda item: item.as_posix()):
         rel = path.relative_to(root).as_posix()
         digest.update(rel.encode())
+        if path.is_symlink():
+            digest.update(b"L" + os.readlink(path).encode())
+        elif path.is_dir():
+            digest.update(b"D")
+        else:
+            digest.update(b"F" + path.read_bytes())
+    return digest.hexdigest()
+
+
+def digest_protocol_tree(root: Path) -> str:
+    digest = hashlib.sha256()
+    if not root.exists():
+        return digest.hexdigest()
+    for path in sorted(root.rglob("*"), key=lambda item: item.as_posix()):
+        relative = path.relative_to(root)
+        if relative.parts and relative.parts[0] == "observability":
+            continue
+        digest.update(relative.as_posix().encode())
         if path.is_symlink():
             digest.update(b"L" + os.readlink(path).encode())
         elif path.is_dir():
@@ -505,10 +524,10 @@ def run_fixture(number: int, h: Harness, directory: Path) -> tuple[bool, Any, st
         return model_result(directory, state, "authorized replacement retains the same node and prior history", lambda s: s["node"] == CHILD_ID and s["history_count"] == len(s["records"]) and s["records"][-1]["event"] == "approved_takeover")
     if number == 20:
         tree, _ = h.init_project(directory)
-        before = digest_tree(tree)
+        before = digest_protocol_tree(tree)
         completed, payload = h.append_decision(directory, tree, tree, "writer-b", "dec_conflict", "writer_takeover", {"active_writer": {"from": {"kind": "agent", "id": "root-writer"}, "to": {"kind": "agent", "id": "writer-b"}}})
         failed = [c.get("check_id") for c in payload.get("checks", []) if c.get("verdict") == "fail"]
-        passed = completed.returncode == 2 and "REC-006" in failed and digest_tree(tree) == before and payload.get("enforcement_class") == "preventive" and "direct_same_authority_filesystem_write" in payload.get("bypass_conditions", [])
+        passed = completed.returncode == 2 and "REC-006" in failed and digest_protocol_tree(tree) == before and payload.get("enforcement_class") == "preventive" and "direct_same_authority_filesystem_write" in payload.get("bypass_conditions", [])
         return passed, {"guard": payload, "failed_checks": failed}, "Guard detects the declared writer conflict, blocks mutation, and states its bypass boundary"
     if number == 21:
         state = {"claimed_idempotent": {"reconciliation_check": None, "replay": "rejected"}, "external_ambiguous": {"effect": "unknown", "replay": "rejected"}}
@@ -552,18 +571,18 @@ def run_fixture(number: int, h: Harness, directory: Path) -> tuple[bool, Any, st
         state = {"progress_scope": "scope-A", "attempts": [{"node": "old"}, {"node": "old"}, {"node": "replacement"}], "counter": 3, "next": "redesign_required"}
         return model_result(directory, state, "node replacement preserves the scope counter and forces redesign at three", lambda s: len({s["progress_scope"]}) == 1 and s["counter"] == len(s["attempts"]) == 3 and s["next"] == "redesign_required")
     if number == 31:
-        tree, _ = h.init_project(directory); before = digest_tree(tree)
+        tree, _ = h.init_project(directory); before = digest_protocol_tree(tree)
         completed, payload = h.append_decision(directory, tree, tree, "root-writer", "dec_invalid", "invalid_transition", {"execution_status": {"from": "active", "to": "proposed"}})
         failed = [c for c in payload.get("checks", []) if c.get("verdict") == "fail"]
-        passed = completed.returncode == 2 and payload.get("changed") is False and digest_tree(tree) == before and any(c.get("blocking_reason") for c in failed)
-        return passed, {"guard": payload, "tree_digest_before": before, "tree_digest_after": digest_tree(tree)}, "invalid Guard mutation is refused before bytes change with a mechanical blocking reason"
+        passed = completed.returncode == 2 and payload.get("changed") is False and digest_protocol_tree(tree) == before and any(c.get("blocking_reason") for c in failed)
+        return passed, {"guard": payload, "protocol_digest_before": before, "protocol_digest_after": digest_protocol_tree(tree)}, "invalid Guard mutation is refused before canonical protocol bytes change with a mechanical blocking reason"
     if number == 32:
         tree, _ = h.init_project(directory); ledger = tree / "ledger" / "decisions.jsonl"
         rogue = {"schema_version": 1, "record_type": "decision", "event_id": "evt_rogue", "node_id": ROOT_ID, "node_sequence": 999, "created_by": {"kind": "agent", "id": "rogue"}, "created_at": FIXED_TIME, "decision_id": "dec_rogue", "state_delta": {}}
         ledger.write_text(ledger.read_text(encoding="utf-8") + json.dumps(rogue, sort_keys=True) + "\n", encoding="utf-8")
-        before = digest_tree(tree); completed, payload = h.guard_command("validate-node", tree)
+        before = digest_protocol_tree(tree); completed, payload = h.guard_command("validate-node", tree)
         failed = [c.get("check_id") for c in payload.get("checks", []) if c.get("verdict") == "fail"]
-        passed = completed.returncode == 2 and "LED-001" in failed and payload.get("enforcement_class") == "detective" and digest_tree(tree) == before
+        passed = completed.returncode == 2 and "LED-001" in failed and payload.get("enforcement_class") == "detective" and digest_protocol_tree(tree) == before
         return passed, {"guard": payload, "failed_checks": failed}, "raw edit remains possible but validate-node detects it as detective drift"
     if number == 33:
         repo = directory / "repo"; repo.mkdir(); git(repo, "init", "-q")
@@ -580,6 +599,66 @@ def run_fixture(number: int, h: Harness, directory: Path) -> tuple[bool, Any, st
         external_code, external = h.guard_command("inspect-enforcement", repo, evidence=evidence)
         passed = applied_code.returncode == local_code.returncode == external_code.returncode == 0 and local.get("enforcement_class") == "detective" and external.get("enforcement_class") == "detective" and external.get("external_evidence_authenticated") is False and external.get("enforcement", {}).get("preventive_boundary") == "none"
         return passed, {"adapter": applied, "local": local, "external": external}, "forgeable local CI evidence remains detective; V1 cannot authenticate an external non-bypassable boundary"
+    if number == 35:
+        tree, initialized = h.init_project(directory)
+        records = []
+        for ledger in ("decisions.jsonl", "approvals.jsonl", "attempts.jsonl"):
+            for line in (tree / "ledger" / ledger).read_text(encoding="utf-8").splitlines():
+                if line:
+                    records.append(json.loads(line))
+        invalid_code, refused = h.append_decision(
+            directory,
+            tree,
+            tree,
+            "root-writer",
+            "dec_audit_refusal",
+            "invalid_transition",
+            {"execution_status": {"from": "active", "to": "proposed"}},
+        )
+        protocol_before = digest_protocol_tree(tree)
+        validation_code, validated = h.guard_command("validate-node", tree)
+        protocol_after = digest_protocol_tree(tree)
+        audit_paths = sorted((tree / "observability" / "events").glob("*.json"))
+        audit_events = [json.loads(path.read_text(encoding="utf-8")) for path in audit_paths]
+        operations = [event.get("operation") for event in audit_events]
+        event_ids = [event.get("audit_event_id") for event in audit_events]
+        valid_digests = all(
+            event.get("result_digest")
+            == digest_bytes(
+                json.dumps(
+                    event.get("result"),
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ).encode("utf-8")
+            )
+            for event in audit_events
+        )
+        passed = (
+            initialized.get("status") == "success"
+            and records
+            and all(record.get("created_at") != "1970-01-01T00:00:00Z" for record in records)
+            and invalid_code.returncode == 2
+            and refused.get("status") == "refused"
+            and validation_code.returncode == 0
+            and validated.get("status") == "pass"
+            and protocol_before == protocol_after
+            and operations.count("init-project") == 1
+            and operations.count("append-record") == 1
+            and operations.count("validate-node") == 1
+            and len(event_ids) == len(set(event_ids)) == 3
+            and all(event.get("schema_version") == "rpt-audit-event-v1" for event in audit_events)
+            and all(event.get("authority") == "non_authoritative" for event in audit_events)
+            and valid_digests
+        )
+        return passed, {
+            "ledger_created_at": [record.get("created_at") for record in records],
+            "audit_paths": [str(path) for path in audit_paths],
+            "audit_operations": operations,
+            "refused": refused,
+            "validated": validated,
+            "protocol_digest_stable": protocol_before == protocol_after,
+            "result_digests_valid": valid_digests,
+        }, "real ledger time plus one immutable audit event per successful, refused, and detective Guard invocation"
     raise AssertionError(number)
 
 
