@@ -240,9 +240,10 @@ failure it records the complete JSON envelope. It also records the diagnosis,
 causal uncertainty, terminal reason, and required next action.
 
 Atomicity covers creation of the one feedback artifact: write and `fsync` a
-temporary file in the destination directory, then publish it with
-`os.replace`. Existing final paths are never overwritten. The two original
-request and result files remain separate preserved inputs.
+temporary file in the destination directory, then use `os.link` to create the
+final path atomically and remove the temporary link. `EEXIST` fails closed, so
+existing final paths are never overwritten even by concurrent writers. The two
+original request and result files remain separate preserved inputs.
 
 This feature creates no new Guard-routed mutation and does not expand Local
 Guard authority. It inherits the RPT enforcement classification: the file
