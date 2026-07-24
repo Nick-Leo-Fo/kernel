@@ -144,11 +144,12 @@ requires model independence. These are assurance requirements, not majority
 votes.
 
 The frozen subject is the declared artifact set plus its exact digests,
-acceptance set, and evidence boundary. Any byte, artifact membership,
-acceptance, or evidence-boundary change to that set creates a new subject and
-invalidates every prior clearance. The new final subject must obtain the full
-required clearance count. A change outside the declared subject does not
-invalidate it unless it changes a supplied claim or proving evidence.
+acceptance set, evidence boundary, and—when RPT governs the review—the declared
+`git_identity`. Any byte, artifact membership, acceptance, evidence-boundary,
+or governed Git-identity change creates a new subject and invalidates every
+prior clearance. The new final subject must obtain the full required clearance
+count. A change outside the declared subject does not invalidate it unless it
+changes a supplied claim or proving evidence.
 
 Preserving clearance across an outside change requires an external change
 record containing the changed artifact identity and digest, dependency
@@ -165,6 +166,8 @@ or membership change is material regardless of apparent semantics.
 One reviewer clearance exists when the owner records that:
 
 - the review completed successfully and is bound to the current subject;
+- the selected role prompt's required output sections exist in their declared
+  order; a structurally incomplete review cannot contribute clearance;
 - no accepted or unresolved `BLOCKER`, `HIGH`, `IMPORTANT`, or equivalent
   material finding remains;
 - every finding has an evidence-backed disposition;
@@ -229,7 +232,8 @@ A small feedback writer automates only durable failure reporting.
 
 `write_framing_feedback.py` accepts the role, target identity, two request
 files, two failed result JSON files, one diagnosis Markdown file, and an output
-directory. It refuses either result unless `status` is `failed`. It writes one
+directory. It refuses either result unless `status` is `failed` and `stage` is
+`backend` or `response`; local setup failures are not invocation evidence. It writes one
 Markdown artifact named from UTC date, role, target slug, and UTC time. For
 each request it records path, SHA-256, byte count, and line count; for each
 failure it records the complete JSON envelope. It also records the diagnosis,
