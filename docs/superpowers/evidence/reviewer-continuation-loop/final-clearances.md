@@ -1,8 +1,8 @@
 # Reviewer Continuation Loop — Final Clearance Evidence
 
-Date: 2026-07-24  
-Task size: `medium_or_large`  
-Required independent clearances: 2  
+Date: 2026-07-24
+Task size: `medium_or_large`
+Required independent clearances: 2
 Kernel Git identity: `68dc2870`
 
 ## Frozen subject
