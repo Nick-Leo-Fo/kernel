@@ -43,6 +43,19 @@ preflight request
 Existing permission and `--no-proxy` recovery remains inside one invocation
 attempt. A substantive `BLOCKED` verdict is not a framing failure.
 
+### Observable result classification
+
+The runner result is classified before any semantic adjudication:
+
+- `status: success` plus exactly one valid verdict is a substantive review.
+  `BLOCKED` remains a substantive verdict and enters owner adjudication.
+- No structured result, or `status: failed` after permitted permission/proxy
+  recovery, is an invocation failure with no verdict.
+- A correctable local invocation, input, or configuration error is repaired
+  without changing the request and does not consume the rebuilt-request retry.
+- If the unchanged invocation still fails, the owner uses the one
+  rebuilt-request retry below.
+
 ## Request repair boundary
 
 The retry preserves role, target identity, stated intent, evidence authority,
@@ -65,14 +78,36 @@ backend failure without evidence.
 
 ## Clearance policy
 
-Task size is frozen before review:
+The active node owner assigns and freezes task size before the first review.
+The direct parent may reject the assignment during acceptance. A task is
+`small` only when all of these are true:
+
+- one localized artifact or behavior is reviewed;
+- no architecture, public interface, persistent state, migration, permission,
+  external effect, or cross-module contract changes;
+- the change is reversible and its acceptance evidence is local.
+
+Every other task is `medium_or_large`. When uncertain, use
+`medium_or_large`.
+
+The clearance threshold is:
 
 - `small`: one independent reviewer clearance;
 - `medium_or_large`: two independent reviewer clearances.
 
-When uncertain, use `medium_or_large`. Two clearances require distinct
-independent reviewer executions against the final frozen subject. They are
-assurance requirements, not majority votes.
+Two clearances require distinct context-independent executions against the
+final frozen subject. Each reviewer runs in a separate process/session, receives
+only the frozen subject and declared evidence, and does not receive another
+reviewer's output. The same model may be reused unless the active contract
+requires model independence. These are assurance requirements, not majority
+votes.
+
+The frozen subject is the declared artifact set plus its exact digests,
+acceptance set, and evidence boundary. Any byte, artifact membership,
+acceptance, or evidence-boundary change to that set creates a new subject and
+invalidates every prior clearance. The new final subject must obtain the full
+required clearance count. A change outside the declared subject does not
+invalidate it unless it changes a supplied claim or proving evidence.
 
 One reviewer clearance exists when the owner records that:
 
@@ -88,16 +123,36 @@ an evidence-backed reason and still issue clearance. A design or architecture
 finding may not be skipped: it must be resolved, disproven with direct
 evidence, or escalated to the authority that owns the disputed decision.
 
+`IMPORTANT` is a `HIGH` alias used by external review systems. An equivalent
+material finding is any label that the active reviewer contract defines as
+acceptance-blocking. `MEDIUM` and `LOW` do not block clearance unless the active
+acceptance contract explicitly promotes them.
+
 `ACCEPTABLE_WITH_FIXES` can contribute clearance only after the above
 conditions hold. `BLOCKED` is not automatically binding, but overriding it
-requires the same complete disposition record and cannot bypass a design or
-architecture dispute.
+requires a complete disposition record containing finding ID, reviewer
+verdict, owner disposition, direct evidence, reasoning, contract impact,
+resolution status, subject digest, and deciding authority. It cannot bypass a
+design or architecture dispute.
 
 ## Automation boundary
 
 The runner remains a single-review, read-only adapter. Semantic request repair,
 finding adjudication, and authorized target changes remain with the node owner.
 A small feedback writer automates only durable failure reporting.
+
+`write_framing_feedback.py` accepts the role, target identity, two request
+files, two failed result JSON files, one diagnosis Markdown file, and an output
+directory. It refuses either result unless `status` is `failed`. It writes one
+Markdown artifact named from UTC date, role, target slug, and UTC time. For
+each request it records path, SHA-256, byte count, and line count; for each
+failure it records the complete JSON envelope. It also records the diagnosis,
+causal uncertainty, terminal reason, and required next action.
+
+Atomicity covers creation of the one feedback artifact: write and `fsync` a
+temporary file in the destination directory, then publish it with
+`os.replace`. Existing final paths are never overwritten. The two original
+request and result files remain separate preserved inputs.
 
 The file protocol remains advisory, validation and clearance checks are
 detective, and Local Guard is preventive only for Guard-routed protocol
