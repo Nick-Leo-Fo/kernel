@@ -21,10 +21,16 @@ status: complete
 
 - Reviewer continuation RED failed on the missing non-terminal call,
   clearance, feedback-path, architecture, and next-step contracts.
-- Reviewer continuation GREEN: `5/5`.
-- Full project-review suite: `66/66`.
+- Reviewer continuation GREEN: `14/14`.
+- Full project-review suite: `76/76`.
 - `project-review` and `recursive-project-tree`: both skill validators passed.
 - RPT deterministic acceptance: `37 passed, 0 failed`.
 - equity-timesfm project automation: PASS.
 - equity-timesfm E0 baseline from the project root: `52 passed`.
 - equity-timesfm responsibility tree: PASS.
+- Final frozen subject: 14 artifacts bound by SHA-256 and Kernel commit
+  `68dc2870`.
+- Independent final clearances: `spec-reviewer = ACCEPTABLE` and
+  `implementation-reviewer = ACCEPTABLE`; neither reported a material finding.
+- Durable clearance manifest:
+  `docs/superpowers/evidence/reviewer-continuation-loop/final-clearances.md`.
