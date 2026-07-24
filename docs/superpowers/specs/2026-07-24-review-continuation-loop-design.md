@@ -33,17 +33,14 @@ local preflight
     no  → correct locally before any external reviewer call, or stop as a
           local setup failure
     yes → external reviewer call 1
-          → substantive completed review?
+          → status:success with valid verdict?
               yes → owner adjudication
-              no  → invocation failure or framing-inconclusive
+              no  → invocation failure
                     → preserve result → self-audit framing → rebuild once
                     → external reviewer call 2
-                    → substantive completed review?
+                    → status:success with valid verdict?
                         yes → owner adjudication
-                        no  → preserve both results
-                              → both status:failed?
-                                  yes → write framing feedback → stop
-                                  no  → report unresolved mixed gap → stop
+                        no  → write framing feedback → stop
 owner adjudication
 → accepted or unresolved material finding?
     yes → pause current stage → record disposition → resolve or escalate
@@ -56,11 +53,10 @@ owner adjudication
 Existing permission and `--no-proxy` recovery remains inside one invocation
 attempt. A substantive `BLOCKED` verdict is not a framing failure.
 
-One review round has one shared retry budget. At most two controller-level
-external reviewer calls are permitted in one review round: the initial request
-and one rebuilt-request retry. A framing-inconclusive outcome consumes the same
-retry as an invocation failure. A local preflight failure is not a reviewer
-invocation and cannot be used to add external calls.
+At most two controller-level external reviewer calls are permitted in one
+invocation-failure sequence: the initial request and one rebuilt-request retry.
+Only an invocation failure can consume this retry. A local preflight failure is
+not a reviewer invocation and cannot be used to add external calls.
 
 ### Observable result classification
 
@@ -68,10 +64,9 @@ The runner result is classified before any semantic adjudication:
 
 - `status: success` plus exactly one valid verdict is a substantive review.
   `BLOCKED` remains a substantive verdict and enters owner adjudication.
-- A completed review is framing-inconclusive only when it cannot answer the
-  selected role's decision because the decision is ambiguous or role-mismatched,
-  target identity is unclear, or authorized available evidence was omitted.
-  It consumes the one shared retry budget rather than entering adjudication.
+- A completed review that criticizes request framing remains substantive. The
+  owner adjudicates that criticism and may authorize a corrected, newly frozen
+  review round; it may not relabel the result as an invocation failure.
 - No structured result, or `status: failed` after permitted permission/proxy
   recovery, is an invocation failure with no verdict.
 - A correctable local invocation, input, or configuration error is found and
@@ -93,14 +88,12 @@ model, timeout, and claim coverage. It may:
 It may not change the reviewed claim, hide adverse evidence, narrow required
 coverage, add unsupported evidence, or steer toward a desired verdict.
 
-After the second non-substantive outcome, stop without a third call. When both
-results have `status: failed`, write one durable diagnostic under
+After the second failed runner result, stop without a third call and write one
+durable diagnostic under
 `/Users/evan/dev/DOCS/reviewer_framing_feedback`. It records both request
 identities and failure envelopes, the repair delta, the caller's causal
-diagnosis, and uncertainty. For a mixed framing-inconclusive/runner-failure
-sequence, preserve both complete results and report the unresolved gap; do not
-misclassify the successful result to satisfy the two-failed-result writer. No
-diagnostic may claim framing caused an opaque backend failure without evidence.
+diagnosis, and uncertainty. No diagnostic may claim framing caused an opaque
+backend failure without evidence.
 
 ## Clearance policy
 
@@ -115,10 +108,7 @@ For this contract:
   current node's return;
 - **acceptance set** means the named completion conditions plus the review-gate
   facts—task size, required clearances, roles, and independence—that must hold
-  for the current subject;
-- **Local Guard** means RPT's local preventive command for protocol mutations;
-  a Guard-routed mutation is one submitted through that command rather than a
-  direct file edit.
+  for the current subject.
 
 The active node owner assigns and freezes task size before the first review.
 The direct parent may reject the assignment during acceptance. Task-size
@@ -154,6 +144,13 @@ invalidates every prior clearance. The new final subject must obtain the full
 required clearance count. A change outside the declared subject does not
 invalidate it unless it changes a supplied claim or proving evidence.
 
+Preserving clearance across an outside change requires an external change
+record containing the changed artifact identity and digest, dependency
+relation to the frozen subject, affected supplied claims, affected proving
+evidence, direct no-effect evidence, rationale, and deciding authority. The
+owner invalidates clearance when no-effect cannot be proven; silence or absence
+from the original manifest is not no-effect evidence.
+
 One reviewer clearance exists when the owner records that:
 
 - the review completed successfully and is bound to the current subject;
@@ -188,8 +185,12 @@ it never rewrites the external result. No RPT verdict follows from
 - `BLOCKED` is `changes_required` when the owner accepts an actionable material
   correction within current authority. It is `inconclusive` with
   `needs_parent` when evidence, independence, subject identity, or deciding
-  authority is missing or disputed. Override requires the complete record
-  below plus every ordinary RPT exit condition.
+  authority is missing or disputed. A fully overridden `BLOCKED` becomes
+  `approved` when every finding is rejected with direct evidence or resolved
+  and verified, the complete override record exists, every ordinary RPT exit
+  condition holds, and no nonblocking finding remains; otherwise it becomes
+  `approved_with_nonblocking_findings` when only recorded nonblocking findings
+  remain.
 - Missing acceptance evidence, unavailable required independence, or a changed
   or unverifiable subject always produces `inconclusive` with `needs_parent`,
   regardless of the external verdict.
@@ -228,13 +229,16 @@ temporary file in the destination directory, then publish it with
 `os.replace`. Existing final paths are never overwritten. The two original
 request and result files remain separate preserved inputs.
 
-The file protocol remains advisory, validation and clearance checks are
-detective, and Local Guard is preventive only for Guard-routed protocol
-mutations.
+This feature creates no new Guard-routed mutation and does not expand Local
+Guard authority. It inherits the RPT enforcement classification: the file
+protocol remains advisory, validation and clearance checks are detective, an
+existing Local Guard command is preventive only for the mutation routed
+through that command, and direct file edits remain bypassable.
 
 ## Acceptance
 
-1. A contract test fails against the old skills and passes after the change.
+1. Continuation contract tests pass against the current frozen skill artifacts;
+   historical RED evidence is retained separately as implementation history.
 2. `project-review` explicitly states that reviewer invocation is not a turn
    boundary and routes to the continuation contract.
 3. RPT Review defines task-size clearance, retry, owner adjudication, re-review,
